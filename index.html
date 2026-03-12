@@ -91,12 +91,11 @@
 </head>
 <body class="flex flex-col items-center min-h-screen py-4 px-4">
 
-    <!-- Áudio de Fundo -->
     <audio id="bg-music" loop></audio>
 
     <div class="max-w-5xl w-full mx-auto flex flex-col gap-4">
         
-        <!-- Header -->
+        <!-- Cabeçalho -->
         <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <h1 class="text-2xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500 uppercase italic">
                 Desafio Musical QWERTY
@@ -105,6 +104,17 @@
                 <button id="start-stop-btn" class="bg-green-600 hover:bg-green-500 text-white font-bold px-6 py-2 rounded-lg flex items-center gap-2 transition active:scale-95 shadow-lg">
                     <i data-lucide="play" class="w-5 h-5"></i> INICIAR JOGO
                 </button>
+                <div class="flex flex-col items-end">
+                   <label class="text-[9px] font-bold text-slate-400 uppercase">Cenário</label>
+                   <select id="scenario-select" class="bg-slate-800 text-xs p-1 rounded border border-slate-600 outline-none w-32">
+                       <option value="1">1: Sol (C4-B4)</option>
+                       <option value="2">2: Sol (E4-F5)</option>
+                       <option value="3">3: Sol (G3-C6)</option>
+                       <option value="4">4: Fá (C3-C4)</option>
+                       <option value="5">5: Fá (G2-A3)</option>
+                       <option value="6">6: Fá (C2-D4)</option>
+                   </select>
+                </div>
                 <div class="flex flex-col items-end">
                    <label class="text-[9px] font-bold text-slate-400 uppercase">Tempo Limite</label>
                    <select id="difficulty-select" class="bg-slate-800 text-xs p-1 rounded border border-slate-600 outline-none">
@@ -125,21 +135,24 @@
         <div id="game-section" class="flex flex-col gap-2">
             <div class="staff-box relative overflow-hidden">
                 <div id="timer-progress" class="absolute top-0 left-0 timer-bar"></div>
-                <svg viewBox="0 0 400 120" class="w-full h-auto">
+                <svg id="staff-svg" viewBox="0 0 400 160" class="w-full h-auto">
                     <g stroke="#334155" stroke-width="1.5">
-                        <line x1="20" y1="30" x2="380" y2="30" />
-                        <line x1="20" y1="45" x2="380" y2="45" />
-                        <line x1="20" y1="60" x2="380" y2="60" />
-                        <line x1="20" y1="75" x2="380" y2="75" />
-                        <line x1="20" y1="90" x2="380" y2="90" />
+                        <line x1="20" y1="40" x2="380" y2="40" />
+                        <line x1="20" y1="55" x2="380" y2="55" />
+                        <line x1="20" y1="70" x2="380" y2="70" />
+                        <line x1="20" y1="85" x2="380" y2="85" />
+                        <line x1="20" y1="100" x2="380" y2="100" />
                     </g>
-                    <!-- Clave de Sol maior e mais alta -->
-                    <text x="15" y="88" font-size="105" fill="#1e293b" font-family="serif">𝄞</text>
-                    <line id="ledger-line" x1="185" y1="105" x2="215" y2="105" stroke="#1e293b" stroke-width="2" style="display:none;"/>
-                    <ellipse id="note-head" cx="200" cy="105" rx="11" ry="8" fill="#1e293b" style="display:none;"/>
+                    <!-- Clave inicial -->
+                    <text id="clef-symbol" x="15" y="98" font-size="110" fill="#1e293b" font-family="serif">𝄞</text>
+                    
+                    <!-- Linhas suplementares dinâmicas -->
+                    <g id="dynamic-ledger-lines" stroke="#1e293b" stroke-width="2"></g>
+                    
+                    <ellipse id="note-head" cx="200" cy="115" rx="11" ry="8" fill="#1e293b" style="display:none;"/>
                 </svg>
                 
-                <!-- Painel de Estatísticas -->
+                <!-- Estatísticas -->
                 <div class="absolute top-4 right-4 flex gap-4 text-slate-900 font-bold bg-white/50 backdrop-blur-sm p-2 rounded-lg">
                     <div class="text-center px-2">
                         <div class="text-[8px] uppercase opacity-70">Tempo</div>
@@ -159,16 +172,15 @@
                     </div>
                 </div>
 
-                <!-- Prompt Inicial Expandido -->
+                <!-- Painel de Início -->
                 <div id="start-prompt" class="absolute inset-0 bg-white/90 flex flex-col items-center justify-center text-slate-800 p-6 text-center">
                     <div class="max-w-md">
                         <h2 class="text-xl font-bold mb-3 uppercase tracking-tight">Instruções de Jogo</h2>
                         <ul class="text-sm text-left space-y-2 mb-6 list-disc list-inside">
-                            <li>Identifique a nota que aparece no pentagrama.</li>
-                            <li>Use as teclas <b>C, D, E, F, G, A, B</b> do seu teclado QWERTY.</li>
-                            <li>Ou <b>clique diretamente nas teclas</b> do piano visual abaixo.</li>
-                            <li>O jogo segue uma <b>sequência especial</b> que alterna entre aleatórias e padrões melódicos.</li>
-                            <li>A cada 10 acertos, você sobe de nível.</li>
+                            <li>Identifique a nota no pentagrama (Clave de Sol ou Fá).</li>
+                            <li>Use as teclas <b>C, D, E, F, G, A, B</b> do teclado.</li>
+                            <li>A cada 10 acertos, o nível aumenta.</li>
+                            <li>O jogo alterna entre trechos aleatórios e padrões fixos.</li>
                         </ul>
                         <p class="font-bold text-blue-600 animate-pulse">Clique em INICIAR JOGO para começar!</p>
                     </div>
@@ -176,10 +188,8 @@
             </div>
         </div>
 
-        <!-- Configurações e Ações -->
+        <!-- Configurações -->
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
-            
-            <!-- Usuário e Relatório -->
             <div class="lg:col-span-2 bg-slate-800/40 p-4 rounded-xl border border-slate-700 flex flex-col gap-3">
                 <div class="flex flex-col">
                     <label class="text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Nome do Usuário</label>
@@ -192,7 +202,6 @@
                 </div>
             </div>
 
-            <!-- Música -->
             <div class="bg-slate-800/40 p-4 rounded-xl border border-slate-700 flex flex-col gap-3">
                 <div class="flex items-center justify-between">
                     <label class="text-[10px] font-bold text-slate-400 uppercase">Trilha de Fundo</label>
@@ -207,14 +216,12 @@
                 <input type="range" id="music-vol" min="0" max="100" value="15" class="w-full">
             </div>
 
-            <!-- Volume Global -->
             <div class="bg-slate-800/40 p-4 rounded-xl border border-slate-700 flex flex-col gap-3">
                 <label class="text-[10px] font-bold text-slate-400 uppercase">Volume Geral do Piano</label>
                 <input type="range" id="main-vol" min="0" max="100" value="80" class="w-full">
             </div>
         </div>
 
-        <!-- Timbre e Efeitos -->
         <div id="control-panel" class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="flex flex-col gap-1">
                 <label class="block text-[10px] font-bold text-cyan-400 uppercase tracking-wider">Timbre (General MIDI)</label>
@@ -247,7 +254,16 @@
     <script>
         lucide.createIcons();
 
-        // --- CITAÇÕES ---
+        // --- CONFIGURAÇÃO DE CENÁRIOS ---
+        const SCENARIOS = {
+            1: { name: "1: Sol (Dó4-Si4)", clef: "treble", range: [60, 71] },
+            2: { name: "2: Sol (Mi4-Fá5)", clef: "treble", range: [64, 77] },
+            3: { name: "3: Sol (Sol3-Dó6)", clef: "treble", range: [55, 84] },
+            4: { name: "4: Fá (Dó3-Dó4)", clef: "bass", range: [48, 60] },
+            5: { name: "5: Fá (Sol2-Lá3)", clef: "bass", range: [43, 57] },
+            6: { name: "6: Fá (Dó2-Ré4)", clef: "bass", range: [36, 62] }
+        };
+
         const fallbacks = [
             { content: "Educação não transforma o mundo. Educação muda as pessoas. Pessoas transformam o mundo.", author: "Paulo Freire" },
             { content: "Sem música, a vida seria um erro.", author: "Friedrich Nietzsche" },
@@ -260,9 +276,21 @@
             { content: "A música pode mudar o mundo.", author: "Ludwig van Beethoven" }
         ];
 
-        // --- ESTADO ---
+        // --- LÓGICA DE SEQUENCIAMENTO ---
+        const noteLookup = { 'c': 0, 'd': 2, 'e': 4, 'f': 5, 'g': 7, 'a': 9, 'b': 11 };
+        const CUSTOM_SEQUENCES = {
+            2: ['c', 'e', 'g', 'e', 'c', 'e', 'g', 'e', 'd', 'f', 'a', 'f', 'd', 'f', 'a', 'f'],
+            4: ['e', 'g', 'b', 'g', 'e', 'g', 'b', 'g', 'f', 'a', 'c', 'a', 'f', 'a', 'c', 'a'],
+            6: ['d', 'e', 'f', 'g', 'f', 'e', 'd', 'c', 'd', 'e', 'f', 'g', 'a', 'b', 'a', 'g', 'e', 'f', 'd'],
+            7: ['g', 'b', 'd', 'b', 'g', 'b', 'g', 'b', 'a', 'c', 'e', 'c', 'a', 'c', 'e', 'c', 'b', 'd', 'f', 'd', 'b', 'd', 'f', 'd'],
+            9: ['d', 'e', 'f', 'g', 'a', 'b', 'c', 'b', 'a', 'g', 'f', 'e', 'd', 'c', 'd']
+        };
+        const RANDOM_REQUIREMENTS = { 1: 5, 3: 5, 5: 6, 8: 7 };
+
+        // --- ESTADO DO JOGO ---
         const gameState = {
             active: false,
+            currentScenario: SCENARIOS[1],
             currentNote: null,
             score: 0,
             bestScore: 0,
@@ -276,85 +304,102 @@
             difficultyDuration: 5000,
             noteSequence: [],
             missedSequence: [],
+            // Máquina de Estados da Sequência
             currentStep: 1, 
             stepSubIndex: 0,
-            randomNotesInStep: 0, 
-            pool: [
-                { key: 'KeyC', midi: 60, name: 'Dó', y: 105, ledger: true }, 
-                { key: 'KeyD', midi: 62, name: 'Ré', y: 97.5, ledger: false }, 
-                { key: 'KeyE', midi: 64, name: 'Mi', y: 90, ledger: false },   
-                { key: 'KeyF', midi: 65, name: 'Fá', y: 82.5, ledger: false }, 
-                { key: 'KeyG', midi: 67, name: 'Sol', y: 75, ledger: false },  
-                { key: 'KeyA', midi: 69, name: 'Lá', y: 67.5, ledger: false }, 
-                { key: 'KeyB', midi: 71, name: 'Si', y: 60, ledger: false }    
-            ]
+            randomNotesInStep: 0,
+            pool: []
         };
-
-        const noteLookup = { 'c': 0, 'd': 1, 'e': 2, 'f': 3, 'g': 4, 'a': 5, 'b': 6 };
-
-        const CUSTOM_SEQUENCES = {
-            2: ['c', 'e', 'g', 'e', 'c', 'e', 'g', 'e', 'd', 'f', 'a', 'f', 'd', 'f', 'a', 'f'],
-            4: ['e', 'g', 'b', 'g', 'e', 'g', 'b', 'g', 'f', 'a', 'c', 'a', 'f', 'a', 'c', 'a'],
-            6: ['d', 'e', 'f', 'g', 'f', 'e', 'd', 'c', 'd', 'e', 'f', 'g', 'a', 'b', 'a', 'g', 'e', 'f', 'd'],
-            7: ['g', 'b', 'd', 'b', 'g', 'b', 'g', 'b', 'a', 'c', 'e', 'c', 'a', 'c', 'e', 'c', 'b', 'd', 'f', 'd', 'b', 'd', 'f', 'd'],
-            9: ['d', 'e', 'f', 'g', 'a', 'b', 'c', 'b', 'a', 'g', 'f', 'e', 'd', 'c', 'd']
-        };
-
-        const RANDOM_REQUIREMENTS = { 1: 5, 3: 5, 5: 6, 8: 7 };
 
         const typewriterData = {
             noteMap: {
-                'KeyA': { name: 'Lá', notes: [57, 69, 81] }, 
-                'KeyB': { name: 'Si', notes: [59, 71, 83] }, 
-                'KeyC': { name: 'Dó', notes: [48, 60, 72] },
-                'KeyD': { name: 'Ré', notes: [50, 62, 74] },
-                'KeyE': { name: 'Mi', notes: [52, 64, 76] },
-                'KeyF': { name: 'Fá', notes: [53, 65, 77] },
-                'KeyG': { name: 'Sol', notes: [55, 67, 79] }
+                'KeyA': { name: 'Lá', midiOffset: 9 }, 
+                'KeyB': { name: 'Si', midiOffset: 11 }, 
+                'KeyC': { name: 'Dó', midiOffset: 0 },
+                'KeyD': { name: 'Ré', midiOffset: 2 },
+                'KeyE': { name: 'Mi', midiOffset: 4 },
+                'KeyF': { name: 'Fá', midiOffset: 5 },
+                'KeyG': { name: 'Sol', midiOffset: 7 }
             }
         };
 
-        const gmNames = [
-            "Acoustic Grand Piano", "Bright Acoustic Piano", "Electric Grand Piano", "Honky-tonk Piano", "Electric Piano 1", "Electric Piano 2", "Harpsichord", "Clavinet", "Celesta", "Glockenspiel", "Music Box", "Vibraphone", "Marimba", "Xylophone", "Tubular Bells", "Dulcimer", "Drawbar Organ", "Percussive Organ", "Rock Organ", "Church Organ", "Reed Organ", "Accordion", "Harmonica", "Tango Accordion", "Acoustic Guitar (nylon)", "Acoustic Guitar (steel)", "Electric Guitar (jazz)", "Electric Guitar (clean)", "Electric Guitar (muted)", "Overdriven Guitar", "Distortion Guitar", "Guitar Harmonics", "Acoustic Bass", "Electric Bass (finger)", "Electric Bass (pick)", "Fretless Bass", "Slap Bass 1", "Slap Bass 2", "Synth Bass 1", "Synth Bass 2", "Violin", "Viola", "Cello", "Contrabass", "Tremolo Strings", "Pizzicato Strings", "Orchestral Harp", "Timpani", "String Ensemble 1", "String Ensemble 2", "Synth Strings 1", "Synth Strings 2", "Choir Aahs", "Voice Oohs", "Synth Choir", "Orchestra Hit", "Trumpet", "Trombone", "Tuba", "Muted Trumpet", "French Horn", "Brass Section", "Synth Brass 1", "Synth Brass 2", "Soprano Sax", "Alto Sax", "Tenor Sax", "Baritone Sax", "Oboe", "English Horn", "Bassoon", "Clarinet", "Piccolo", "Flute", "Recorder", "Pan Flute", "Blown Bottle", "Shakuhachi", "Whistle", "Ocarina", "Lead 1 (square)", "Lead 2 (sawtooth)", "Lead 3 (calliope)", "Lead 4 (chiff)", "Lead 5 (charang)", "Lead 6 (voice)", "Lead 7 (fifths)", "Lead 8 (bass + lead)", "Pad 1 (new age)", "Pad 2 (warm)", "Pad 3 (polysynth)", "Pad 4 (choir)", "Pad 5 (bowed)", "Pad 6 (metallic)", "Pad 7 (halo)", "Pad 8 (sweep)", "FX 1 (rain)", "FX 2 (soundtrack)", "FX 3 (crystal)", "FX 4 (atmosphere)", "FX 5 (brightness)", "FX 6 (goblins)", "FX 7 (echoes)", "FX 8 (sci-fi)", "Sitar", "Banjo", "Shamisen", "Koto", "Kalimba", "Bagpipe", "Fiddle", "Shanai", "Tinkle Bell", "Agogo", "Steel Drums", "Woodblock", "Taiko Drum", "Melodic Tom", "Synth Drum", "Reverse Cymbal", "Guitar Cutting Noise", "String Slap", "Breath Noise", "Seashore", "Bird Tweet", "Telephone Ring", "Helicopter", "Applause", "Gunshot"
-        ];
-
+        const gmNames = ["Acoustic Grand Piano", "Bright Acoustic Piano", "Electric Grand Piano", "Honky-tonk Piano", "Electric Piano 1", "Electric Piano 2", "Harpsichord", "Clavinet", "Celesta", "Glockenspiel", "Music Box", "Vibraphone", "Marimba", "Xylophone", "Tubular Bells", "Dulcimer", "Drawbar Organ", "Percussive Organ", "Rock Organ", "Church Organ", "Reed Organ", "Accordion", "Harmonica", "Tango Accordion", "Acoustic Guitar (nylon)", "Acoustic Guitar (steel)", "Electric Guitar (jazz)", "Electric Guitar (clean)", "Electric Guitar (muted)", "Overdriven Guitar", "Distortion Guitar", "Guitar Harmonics", "Acoustic Bass", "Electric Bass (finger)", "Electric Bass (pick)", "Fretless Bass", "Slap Bass 1", "Slap Bass 2", "Synth Bass 1", "Synth Bass 2", "Violin", "Viola", "Cello", "Contrabass", "Tremolo Strings", "Pizzicato Strings", "Orchestral Harp", "Timpani", "String Ensemble 1", "String Ensemble 2", "Synth Strings 1", "Synth Strings 2", "Choir Aahs", "Voice Oohs", "Synth Choir", "Orchestra Hit", "Trumpet", "Trombone", "Tuba", "Muted Trumpet", "French Horn", "Brass Section", "Synth Brass 1", "Synth Brass 2", "Soprano Sax", "Alto Sax", "Tenor Sax", "Baritone Sax", "Oboe", "English Horn", "Bassoon", "Clarinet", "Piccolo", "Flute", "Recorder", "Pan Flute", "Blown Bottle", "Shakuhachi", "Whistle", "Ocarina", "Lead 1 (square)", "Lead 2 (sawtooth)", "Lead 3 (calliope)", "Lead 4 (chiff)", "Lead 5 (charang)", "Lead 6 (voice)", "Lead 7 (fifths)", "Lead 8 (bass + lead)", "Pad 1 (new age)", "Pad 2 (warm)", "Pad 3 (polysynth)", "Pad 4 (choir)", "Pad 5 (bowed)", "Pad 6 (metallic)", "Pad 7 (halo)", "Pad 8 (sweep)", "FX 1 (rain)", "FX 2 (soundtrack)", "FX 3 (crystal)", "FX 4 (atmosphere)", "FX 5 (brightness)", "FX 6 (goblins)", "FX 7 (echoes)", "FX 8 (sci-fi)", "Sitar", "Banjo", "Shamisen", "Koto", "Kalimba", "Bagpipe", "Fiddle", "Shanai", "Tinkle Bell", "Agogo", "Steel Drums", "Woodblock", "Taiko Drum", "Melodic Tom", "Synth Drum", "Reverse Cymbal", "Guitar Cutting Noise", "String Slap", "Breath Noise", "Seashore", "Bird Tweet", "Telephone Ring", "Helicopter", "Applause", "Gunshot"];
         const sfSlugs = gmNames.map(name => name.toLowerCase().replace(/[\(\)]/g, "").replace(/\s+/g, "_"));
-
         const state = { prog: 12, vol: 0.8, reverb: 0.3, release: 1.0 }; 
 
         let audioCtx = null;
         let instrument = null;
         let masterGain, reverbNode, dryGain, wetGain;
-
         const bgMusic = document.getElementById('bg-music');
-        bgMusic.volume = 0.15;
 
-        // --- ÁUDIO ---
+        function updatePoolForScenario() {
+            const [min, max] = gameState.currentScenario.range;
+            gameState.pool = [];
+            for (let i = min; i <= max; i++) {
+                if ([0, 2, 4, 5, 7, 9, 11].includes(i % 12)) {
+                    const names = ['Dó','','Ré','','Mi','Fá','','Sol','','Lá','','Si'];
+                    const keys = ['C','','D','','E','F','','G','','A','','B'];
+                    gameState.pool.push({ midi: i, name: names[i%12], key: 'Key'+keys[i%12], y: calculateY(i) });
+                }
+            }
+        }
+
+        function calculateY(midi) {
+            const isTreble = gameState.currentScenario.clef === "treble";
+            const baselineMidi = isTreble ? 64 : 43; 
+            const baselineY = 100;
+            return baselineY - (getDiatonicSteps(baselineMidi, midi) * 7.5);
+        }
+
+        function getDiatonicSteps(m1, m2) {
+            const diatonic = [0, 2, 4, 5, 7, 9, 11];
+            let steps = 0;
+            let current = m1;
+            if (m1 < m2) {
+                while (current < m2) { current++; if (diatonic.includes(current % 12)) steps++; }
+            } else {
+                while (current > m2) { current--; if (diatonic.includes(current % 12)) steps--; }
+            }
+            return steps;
+        }
+
+        function drawLedgerLines(y) {
+            const container = document.getElementById('dynamic-ledger-lines');
+            container.innerHTML = '';
+            if (y >= 115) {
+                for (let ly = 115; ly <= y; ly += 15) {
+                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    line.setAttribute("x1", "185"); line.setAttribute("x2", "215");
+                    line.setAttribute("y1", ly); line.setAttribute("y2", ly);
+                    container.appendChild(line);
+                }
+            } else if (y <= 25) {
+                for (let ly = 25; ly >= y; ly -= 15) {
+                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    line.setAttribute("x1", "185"); line.setAttribute("x2", "215");
+                    line.setAttribute("y1", ly); line.setAttribute("y2", ly);
+                    container.appendChild(line);
+                }
+            }
+        }
+
         function initAudio() {
             if (audioCtx) return;
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             masterGain = audioCtx.createGain();
             reverbNode = audioCtx.createConvolver();
-            
             const length = audioCtx.sampleRate * 2.5;
             const impulse = audioCtx.createBuffer(2, length, audioCtx.sampleRate);
             for (let i = 0; i < 2; i++) {
-                const channel = impulse.getChannelData(i);
-                for (let j = 0; j < length; j++) channel[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / length, 2.5);
+                const ch = impulse.getChannelData(i);
+                for (let j = 0; j < length; j++) ch[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / length, 2.5);
             }
             reverbNode.buffer = impulse;
-
-            dryGain = audioCtx.createGain();
-            wetGain = audioCtx.createGain();
-            dryGain.gain.value = 1.0;
-            wetGain.gain.value = state.reverb;
-
-            masterGain.connect(dryGain);
-            masterGain.connect(reverbNode);
-            reverbNode.connect(wetGain);
-            dryGain.connect(audioCtx.destination);
+            dryGain = audioCtx.createGain(); wetGain = audioCtx.createGain();
+            dryGain.gain.value = 1.0; wetGain.gain.value = state.reverb;
+            masterGain.connect(dryGain); masterGain.connect(reverbNode);
+            reverbNode.connect(wetGain); dryGain.connect(audioCtx.destination);
             wetGain.connect(audioCtx.destination);
-
             loadInstrument();
         }
 
@@ -371,37 +416,40 @@
             if (el) { el.classList.add('active'); setTimeout(() => el.classList.remove('active'), 200); }
         }
 
-        // --- LÓGICA DO JOGO ---
-        function startClock() {
-            gameState.gameStartTime = Date.now();
-            gameState.clockInterval = setInterval(() => {
-                const elapsed = Math.floor((Date.now() - gameState.gameStartTime) / 1000);
-                const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
-                const secs = (elapsed % 60).toString().padStart(2, '0');
-                document.getElementById('stat-clock').textContent = `${mins}:${secs}`;
-            }, 1000);
-        }
-
-        function stopClock() {
-            clearInterval(gameState.clockInterval);
-        }
-
+        // --- MOTOR DO JOGO ---
         function spawnGameNote() {
             if (!gameState.active) return;
-            
+
             let noteToDisplay;
-            if (RANDOM_REQUIREMENTS[gameState.currentStep]) {
+            const step = gameState.currentStep;
+
+            if (RANDOM_REQUIREMENTS[step]) {
+                // Passo Aleatório
                 noteToDisplay = gameState.pool[Math.floor(Math.random() * gameState.pool.length)];
                 gameState.randomNotesInStep++;
-                if (gameState.randomNotesInStep >= RANDOM_REQUIREMENTS[gameState.currentStep]) {
+                
+                if (gameState.randomNotesInStep >= RANDOM_REQUIREMENTS[step]) {
                     gameState.currentStep++;
                     gameState.randomNotesInStep = 0;
                     gameState.stepSubIndex = 0;
                 }
             } else {
-                const seq = CUSTOM_SEQUENCES[gameState.currentStep];
+                // Passo com Sequência Fixa
+                const seq = CUSTOM_SEQUENCES[step];
                 const char = seq[gameState.stepSubIndex];
-                noteToDisplay = gameState.pool[noteLookup[char]];
+                const midiTarget = noteLookup[char];
+                
+                // Encontrar notas com esse nome no pool
+                const candidates = gameState.pool.filter(n => n.midi % 12 === midiTarget);
+                
+                if (candidates.length > 0) {
+                    // Seleciona a nota mais central para evitar saltos extremos
+                    noteToDisplay = candidates[Math.floor(candidates.length / 2)];
+                } else {
+                    // Fallback se a nota não estiver no range (raro)
+                    noteToDisplay = gameState.pool[0];
+                }
+
                 gameState.stepSubIndex++;
                 if (gameState.stepSubIndex >= seq.length) {
                     gameState.currentStep++;
@@ -410,57 +458,36 @@
                 }
             }
 
-            if (gameState.currentStep > 9) {
-                gameState.currentStep = 1;
-                gameState.stepSubIndex = 0;
-                gameState.randomNotesInStep = 0;
-            }
+            // Loop infinito da estrutura
+            if (gameState.currentStep > 9) gameState.currentStep = 1;
 
             gameState.currentNote = noteToDisplay;
-            
             const head = document.getElementById('note-head');
-            const ledger = document.getElementById('ledger-line');
             const timerBar = document.getElementById('timer-progress');
 
             head.setAttribute('cy', gameState.currentNote.y);
             head.style.display = 'block';
-            
-            ledger.style.display = gameState.currentNote.ledger ? 'block' : 'none';
-            if(gameState.currentNote.ledger) {
-                ledger.setAttribute('y1', gameState.currentNote.y);
-                ledger.setAttribute('y2', gameState.currentNote.y);
-            }
+            drawLedgerLines(gameState.currentNote.y);
 
-            if (instrument) {
-                instrument.play(gameState.currentNote.midi, audioCtx.currentTime, { gain: state.vol });
-            }
+            if (instrument) instrument.play(gameState.currentNote.midi, audioCtx.currentTime, { gain: state.vol });
 
-            const durationInSeconds = gameState.difficultyDuration / 1000;
-            timerBar.style.transition = 'none';
-            timerBar.style.width = '100%';
-            setTimeout(() => {
-                timerBar.style.transition = `width ${durationInSeconds}s linear`;
-                timerBar.style.width = '0%';
-            }, 10);
+            const dur = gameState.difficultyDuration / 1000;
+            timerBar.style.transition = 'none'; timerBar.style.width = '100%';
+            setTimeout(() => { timerBar.style.transition = `width ${dur}s linear`; timerBar.style.width = '0%'; }, 10);
 
             gameState.canInput = true;
             clearTimeout(gameState.timer);
-            gameState.timer = setTimeout(() => {
-                if(gameState.canInput) handleGameResult(false);
-            }, gameState.difficultyDuration);
+            gameState.timer = setTimeout(() => { if(gameState.canInput) handleGameResult(false); }, gameState.difficultyDuration);
         }
 
         function handleGameResult(isCorrect) {
             gameState.canInput = false;
             clearTimeout(gameState.timer);
-
             if (isCorrect) {
-                gameState.score++;
-                gameState.totalHits++;
+                gameState.score++; gameState.totalHits++;
                 document.body.classList.add('hit-flash');
                 if (instrument) instrument.play(gameState.currentNote.midi);
                 gameState.noteSequence.push(gameState.currentNote.name);
-
                 if (gameState.totalHits % 10 === 0 && gameState.totalHits !== 0) {
                     gameState.level++;
                     const lvlEl = document.getElementById('stat-level');
@@ -469,52 +496,37 @@
                     setTimeout(() => lvlEl.classList.remove('level-up-anim'), 1000);
                 }
             } else {
-                gameState.score = 0;
-                gameState.totalErrors++;
+                gameState.score = 0; gameState.totalErrors++;
                 document.body.classList.add('miss-flash');
                 gameState.missedSequence.push(gameState.currentNote.name);
             }
-
             document.getElementById('stat-hits').textContent = gameState.totalHits;
             document.getElementById('stat-errors').textContent = gameState.totalErrors;
             
-            if(gameState.score > gameState.bestScore) {
-                gameState.bestScore = gameState.score;
-            }
-
             setTimeout(() => {
                 document.body.classList.remove('hit-flash', 'miss-flash');
                 if (gameState.active) spawnGameNote();
             }, 1000);
         }
 
-        // --- UI E EVENTOS ---
         function renderPiano() {
             const piano = document.getElementById('piano');
             let html = "";
             for (let i = 21; i <= 108; i++) {
-                const isBlack = [1, 3, 6, 8, 10].includes(i % 12);
-                if (!isBlack) {
-                    const nextIsBlack = [1, 3, 6, 8, 10].includes((i + 1) % 12);
-                    let blackHTML = nextIsBlack ? `<div class="key black" data-note="${i+1}"></div>` : '';
+                if (![1, 3, 6, 8, 10].includes(i % 12)) {
+                    let blackHTML = [1, 3, 6, 8, 10].includes((i + 1) % 12) ? `<div class="key black" data-note="${i+1}"></div>` : '';
                     html += `<div class="relative flex-none"><div class="key white" data-note="${i}"></div>${blackHTML}</div>`;
                 }
             }
             piano.innerHTML = html;
-
             piano.querySelectorAll('.key').forEach(keyEl => {
                 keyEl.addEventListener('mousedown', (e) => {
-                    e.preventDefault();
-                    if (!audioCtx) initAudio();
+                    e.preventDefault(); if (!audioCtx) initAudio();
                     const midi = parseInt(keyEl.getAttribute('data-note'));
-                    
                     if (gameState.active && gameState.canInput) {
-                        const mapping = Object.values(typewriterData.noteMap).find(m => m.name === gameState.currentNote.name);
-                        if (mapping && mapping.notes.includes(midi)) {
-                             handleGameResult(true); return;
-                        } else if (Object.values(typewriterData.noteMap).some(m => m.notes.includes(midi))) {
-                             handleGameResult(false); return;
-                        }
+                        if (midi % 12 === gameState.currentNote.midi % 12) handleGameResult(true);
+                        else handleGameResult(false);
+                        return;
                     }
                     playKey(midi);
                 });
@@ -523,120 +535,87 @@
 
         window.addEventListener('keydown', (e) => {
             if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;
-            if (e.repeat) return;
             if (!audioCtx) initAudio();
-
             if (gameState.active && gameState.canInput) {
-                if (e.code === gameState.currentNote.key) {
-                    handleGameResult(true); return;
-                } else if (['KeyA','KeyB','KeyC','KeyD','KeyE','KeyF','KeyG'].includes(e.code)) {
-                    handleGameResult(false); return;
+                const map = typewriterData.noteMap[e.code];
+                if (map) {
+                    if (map.midiOffset === gameState.currentNote.midi % 12) handleGameResult(true);
+                    else handleGameResult(false);
+                    return;
                 }
             }
-
-            const data = typewriterData.noteMap[e.code];
-            if (data) playKey(data.notes[1]);
+            const map = typewriterData.noteMap[e.code];
+            if (map) {
+                 let base = gameState.currentScenario.clef === 'treble' ? 60 : 36;
+                 playKey(base + map.midiOffset);
+            }
         });
 
-        function updateMusicSource() {
-            const val = document.getElementById('bg-music-select').value;
-            if (val === "") {
-                bgMusic.pause();
-                bgMusic.src = "";
+        document.getElementById('scenario-select').addEventListener('change', (e) => {
+            gameState.currentScenario = SCENARIOS[e.target.value];
+            const clefEl = document.getElementById('clef-symbol');
+            if (gameState.currentScenario.clef === "treble") {
+                clefEl.textContent = "𝄞"; 
+                clefEl.setAttribute("y", "98"); 
+                clefEl.setAttribute("font-size", "110");
             } else {
-                bgMusic.src = `https://github.com/GlauberLASantiago/DesafioMusicalQWERTY/raw/main/DesafioMusicalQWERTY_${val}.mp3`;
-                if (gameState.active) bgMusic.play().catch(console.error);
+                clefEl.textContent = "𝄢"; 
+                clefEl.setAttribute("y", "106"); // Mais baixo conforme solicitado
+                clefEl.setAttribute("font-size", "100");
             }
-        }
-
-        document.getElementById('bg-music-select').addEventListener('change', updateMusicSource);
-        document.getElementById('music-vol').addEventListener('input', (e) => {
-            bgMusic.volume = e.target.value / 100;
+            updatePoolForScenario();
+            if (gameState.active) { clearTimeout(gameState.timer); spawnGameNote(); }
         });
 
         document.getElementById('start-stop-btn').addEventListener('click', () => {
             if (!audioCtx) initAudio();
             gameState.active = !gameState.active;
             const btn = document.getElementById('start-stop-btn');
-            const prompt = document.getElementById('start-prompt');
-            
             if (gameState.active) {
                 btn.innerHTML = '<i data-lucide="square" class="w-5 h-5"></i> PARAR JOGO';
                 btn.classList.replace('bg-green-600', 'bg-red-600');
-                btn.classList.replace('hover:bg-green-500', 'hover:bg-red-500');
-                prompt.style.display = 'none';
+                document.getElementById('start-prompt').style.display = 'none';
                 
-                gameState.score = 0;
-                gameState.totalHits = 0;
-                gameState.totalErrors = 0;
-                gameState.level = 1;
-                gameState.noteSequence = [];
-                gameState.missedSequence = [];
+                // Reset da lógica de sequência
                 gameState.currentStep = 1;
                 gameState.stepSubIndex = 0;
                 gameState.randomNotesInStep = 0;
-
-                // Reset visual do clock apenas no início
-                document.getElementById('stat-clock').textContent = "00:00";
-                document.getElementById('stat-hits').textContent = "0";
-                document.getElementById('stat-errors').textContent = "0";
-                document.getElementById('stat-level').textContent = "1";
                 
-                startClock();
-                updateMusicSource();
-                spawnGameNote();
+                gameState.score = 0; gameState.totalHits = 0; gameState.totalErrors = 0;
+                updatePoolForScenario();
+                startClock(); spawnGameNote();
+                const val = document.getElementById('bg-music-select').value;
+                if (val) { bgMusic.src = `https://github.com/GlauberLASantiago/DesafioMusicalQWERTY/raw/main/DesafioMusicalQWERTY_${val}.mp3`; bgMusic.play(); }
             } else {
                 btn.innerHTML = '<i data-lucide="play" class="w-5 h-5"></i> INICIAR JOGO';
                 btn.classList.replace('bg-red-600', 'bg-green-600');
-                btn.classList.replace('hover:bg-red-500', 'hover:bg-green-500');
-                prompt.style.display = 'flex';
-                
-                stopClock();
-                bgMusic.pause();
-                clearTimeout(gameState.timer);
+                document.getElementById('start-prompt').style.display = 'flex';
+                clearInterval(gameState.clockInterval); bgMusic.pause(); clearTimeout(gameState.timer);
                 document.getElementById('note-head').style.display = 'none';
-                document.getElementById('ledger-line').style.display = 'none';
-                document.getElementById('timer-progress').style.width = '0%';
+                document.getElementById('dynamic-ledger-lines').innerHTML = '';
             }
             lucide.createIcons();
         });
 
-        document.getElementById('difficulty-select').addEventListener('change', (e) => {
-            gameState.difficultyDuration = parseInt(e.target.value);
-            if (gameState.active) {
-                clearTimeout(gameState.timer);
-                spawnGameNote();
-            }
-        });
-
-        document.getElementById('toggle-contrast-btn').addEventListener('click', () => document.body.classList.toggle('high-contrast'));
-        document.getElementById('instrument-select').addEventListener('change', (e) => { 
-            state.prog = parseInt(e.target.value); 
-            loadInstrument(); 
-        });
-        document.getElementById('main-vol').addEventListener('input', (e) => state.vol = e.target.value / 100);
-        document.getElementById('reverb-slider').addEventListener('input', (e) => { 
-            state.reverb = e.target.value / 100; 
-            if(wetGain) wetGain.gain.setTargetAtTime(state.reverb, audioCtx.currentTime, 0.05); 
-        });
-        document.getElementById('release-slider').addEventListener('input', (e) => state.release = e.target.value / 100);
+        function startClock() {
+            gameState.gameStartTime = Date.now();
+            gameState.clockInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - gameState.gameStartTime) / 1000);
+                document.getElementById('stat-clock').textContent = `${Math.floor(elapsed/60).toString().padStart(2,'0')}:${(elapsed%60).toString().padStart(2,'0')}`;
+            }, 1000);
+        }
 
         document.getElementById('copy-report').addEventListener('click', () => {
-            const name = document.getElementById('user-name').value || "Usuário não identificado";
-            const now = new Date();
-            const dateStr = now.toLocaleDateString('pt-BR');
-            const timeStr = now.toLocaleTimeString('pt-BR');
+            const name = document.getElementById('user-name').value || "Usuário";
             const quote = fallbacks[Math.floor(Math.random() * fallbacks.length)];
-            const diff = document.getElementById('difficulty-select').options[document.getElementById('difficulty-select').selectedIndex].text;
-            const timeElapsed = document.getElementById('stat-clock').textContent;
-
+            const diff = document.getElementById('difficulty-select').selectedOptions[0].text;
             const report = `DESAFIO MUSICAL QWERTY
 
 "${quote.content}" — ${quote.author}
 
 Usuário: ${name}
-Data: ${dateStr} às ${timeStr}
-Tempo de Jogo: ${timeElapsed}
+Cenário: ${gameState.currentScenario.name}
+Tempo de Jogo: ${document.getElementById('stat-clock').textContent}
 Tempo máximo de resposta selecionado: ${diff}
 Nível Alcançado: ${gameState.level}
 Total de Acertos: ${gameState.totalHits}
@@ -648,33 +627,23 @@ ${gameState.noteSequence.join(' - ') || 'Nenhuma'}
 NOTAS NÃO ACERTADAS (ERROS/TIMEOUT):
 ${gameState.missedSequence.join(' - ') || 'Nenhum erro registrado'}`;
 
-            const temp = document.createElement("textarea");
-            temp.value = report.trim();
-            document.body.appendChild(temp);
-            temp.select();
-            document.execCommand("copy");
-            document.body.removeChild(temp);
-
-            const btn = document.getElementById('copy-report');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> COPIADO!';
-            setTimeout(() => btn.innerHTML = originalText, 2000);
+            const temp = document.createElement("textarea"); temp.value = report; document.body.appendChild(temp);
+            temp.select(); document.execCommand("copy"); document.body.removeChild(temp);
+            const btn = document.getElementById('copy-report'); btn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> COPIADO!';
+            setTimeout(() => btn.innerHTML = '<i data-lucide="file-text" class="w-4 h-4"></i> COPIAR RELATÓRIO', 2000);
         });
 
         const instSelect = document.getElementById('instrument-select');
-        gmNames.forEach((n, i) => {
-            const opt = new Option(`${i}. ${n}`, i);
-            if (i === state.prog) opt.selected = true;
-            instSelect.appendChild(opt);
-        });
+        gmNames.forEach((n, i) => { const opt = new Option(`${i}. ${n}`, i); if (i === 12) opt.selected = true; instSelect.appendChild(opt); });
+        document.getElementById('music-vol').addEventListener('input', (e) => bgMusic.volume = e.target.value / 100);
+        document.getElementById('main-vol').addEventListener('input', (e) => state.vol = e.target.value / 100);
+        document.getElementById('reverb-slider').addEventListener('input', (e) => state.reverb = e.target.value / 100);
+        document.getElementById('release-slider').addEventListener('input', (e) => state.release = e.target.value / 100);
+        document.getElementById('difficulty-select').addEventListener('change', (e) => gameState.difficultyDuration = parseInt(e.target.value));
+        document.getElementById('toggle-contrast-btn').addEventListener('click', () => document.body.classList.toggle('high-contrast'));
 
-        bgMusic.src = `https://github.com/GlauberLASantiago/DesafioMusicalQWERTY/raw/main/DesafioMusicalQWERTY_1.mp3`;
-
-        renderPiano();
-        setTimeout(() => { 
-            const c4 = document.querySelector('[data-note="60"]'); 
-            if (c4) c4.scrollIntoView({ inline: 'center' }); 
-        }, 500);
+        renderPiano(); updatePoolForScenario();
+        setTimeout(() => document.querySelector('[data-note="60"]').scrollIntoView({ inline: 'center' }), 500);
     </script>
 </body>
 </html>
