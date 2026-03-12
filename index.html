@@ -133,8 +133,8 @@
                         <line x1="20" y1="75" x2="380" y2="75" />
                         <line x1="20" y1="90" x2="380" y2="90" />
                     </g>
-                    <!-- Clave de Sol maior -->
-                    <text x="20" y="92" font-size="85" fill="#1e293b" font-family="serif">𝄞</text>
+                    <!-- Clave de Sol maior e mais alta -->
+                    <text x="15" y="88" font-size="105" fill="#1e293b" font-family="serif">𝄞</text>
                     <line id="ledger-line" x1="185" y1="105" x2="215" y2="105" stroke="#1e293b" stroke-width="2" style="display:none;"/>
                     <ellipse id="note-head" cx="200" cy="105" rx="11" ry="8" fill="#1e293b" style="display:none;"/>
                 </svg>
@@ -384,7 +384,6 @@
 
         function stopClock() {
             clearInterval(gameState.clockInterval);
-            // Removido o reset do textContent para "00:00" aqui para manter o tempo no relatório
         }
 
         function spawnGameNote() {
