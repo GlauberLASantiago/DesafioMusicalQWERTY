@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desafio Musical QWERTY</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/soundfont-player/dist/soundfont-player.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        
+        body { 
+            background-color: #0f172a; 
+            color: white; 
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+            overflow-x: hidden;
+            transition: background-color 0.1s, color 0.3s;
+        }
+
+        .piano-container {
+            display: flex;
+            background: #1e293b;
+            padding: 24px 24px 0 24px;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.05);
+            overflow-x: auto;
+            border: 1px solid #334155;
+            scrollbar-width: thin;
+            scrollbar-color: #475569 #1e293b;
+        }
+
+        .white {
+            width: 54px; height: 160px;
+            background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 0 0 6px 6px;
+            cursor: pointer; box-shadow: inset 0 -4px 6px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.3);
+            transition: all 0.05s ease; position: relative; z-index: 1;
+        }
+        .white.active {
+            background: #3b82f6; transform: translateY(2px);
+        }
+
+        .black {
+            width: 34px; height: 100px;
+            background: linear-gradient(to bottom, #334155 0%, #0f172a 100%);
+            border-radius: 0 0 4px 4px; cursor: pointer;
+            z-index: 10; transition: all 0.05s ease; position: absolute; top: 0; right: -17px; 
+        }
+        .black.active {
+            background: #2563eb; transform: translateY(2px);
+        }
+
+        .staff-box {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        body.high-contrast { background-color: #ffffff; color: #000000; }
+        body.high-contrast .bg-slate-800, 
+        body.high-contrast .bg-slate-800\/40, 
+        body.high-contrast .staff-box,
+        body.high-contrast .piano-container { 
+            background: #ffffff !important; border: 2px solid #000 !important; color: #000 !important;
+        }
+        
+        .timer-bar {
+            height: 4px;
+            background: #ef4444;
+            width: 0%;
+            transition: width 1s linear; 
+        }
+
+        .hit-flash { background-color: #166534 !important; }
+        .miss-flash { background-color: #b91c1c !important; }
+
+        input[type=range] { -webkit-appearance: none; background: #334155; height: 4px; border-radius: 2px; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #3b82f6; cursor: pointer; }
+    </style>
+</head>
+<body class="flex flex-col items-center min-h-screen py-4 px-4">
+
+    <!-- Áudio de Fundo -->
+    <audio id="bg-music" loop>
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" type="audio/mpeg">
+    </audio>
+
+    <div class="max-w-5xl w-full mx-auto flex flex-col gap-4">
+        
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <h1 class="text-2xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500 uppercase italic">
+                Desafio Musical QWERTY
+            </h1>
+            <div class="flex items-center gap-3">
+                <div class="flex flex-col items-end">
+                   <label class="text-[9px] font-bold text-slate-400 uppercase">Tempo Limite</label>
+                   <select id="difficulty-select" class="bg-slate-800 text-xs p-1 rounded border border-slate-600 outline-none">
+                       <option value="5000" selected>5s</option>
+                       <option value="3000">3s</option>
+                       <option value="2000">2s</option>
+                       <option value="1000">1s</option>
+                       <option value="500">0.5s</option>
+                   </select>
+                </div>
+                <button id="toggle-contrast-btn" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-600 transition">
+                    <i data-lucide="sun" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Pentagrama -->
+        <div id="game-section" class="flex flex-col gap-2">
+            <div class="staff-box relative overflow-hidden">
+                <div id="timer-progress" class="absolute top-0 left-0 timer-bar"></div>
+                <svg viewBox="0 0 400 120" class="w-full h-auto">
+                    <g stroke="#334155" stroke-width="1.5">
+                        <line x1="20" y1="30" x2="380" y2="30" />
+                        <line x1="20" y1="45" x2="380" y2="45" />
+                        <line x1="20" y1="60" x2="380" y2="60" />
+                        <line x1="20" y1="75" x2="380" y2="75" />
+                        <line x1="20" y1="90" x2="380" y2="90" />
+                    </g>
+                    <text x="25" y="85" font-size="65" fill="#1e293b" font-family="serif">𝄞</text>
+                    <line id="ledger-line" x1="185" y1="105" x2="215" y2="105" stroke="#1e293b" stroke-width="2" style="display:none;"/>
+                    <ellipse id="note-head" cx="200" cy="105" rx="11" ry="8" fill="#1e293b" style="display:none;"/>
+                </svg>
+                <div class="absolute top-4 right-4 flex gap-6 text-slate-900 font-bold">
+                    <div class="text-center">
+                        <div class="text-[9px] uppercase opacity-60">Acertos</div>
+                        <div id="game-hits" class="text-xl text-green-600">0</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-[9px] uppercase opacity-60">Recorde</div>
+                        <div id="game-best" class="text-xl text-blue-600">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configurações e Ações -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+            
+            <!-- Usuário e Relatório -->
+            <div class="lg:col-span-2 bg-slate-800/40 p-4 rounded-xl border border-slate-700 flex flex-col gap-3">
+                <div class="flex flex-col">
+                    <label class="text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Nome do Usuário</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="user-name" placeholder="Seu nome..." class="flex-1 bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm outline-none focus:border-blue-500 transition">
+                        <button id="copy-report" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded text-xs flex items-center gap-2 transition active:scale-95">
+                            <i data-lucide="file-text" class="w-4 h-4"></i> COPIAR RELATÓRIO
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Música e Metrônomo -->
+            <div class="bg-slate-800/40 p-4 rounded-xl border border-slate-700 flex flex-col gap-3">
+                <div class="flex items-center justify-between">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase">Música de Fundo</label>
+                    <button id="music-toggle" class="text-[10px] bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded uppercase font-bold">Ligar</button>
+                </div>
+                <input type="range" id="music-vol" min="0" max="100" value="10" class="w-full">
+            </div>
+
+            <div class="bg-slate-800/40 p-4 rounded-xl border border-slate-700 flex flex-col gap-3">
+                <div class="flex items-center justify-between">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase">Metrônomo (BPM: <span id="bpm-val">120</span>)</label>
+                    <button id="metronome-toggle" class="text-green-500 hover:text-green-400"><i data-lucide="play" class="w-4 h-4"></i></button>
+                </div>
+                <input type="range" id="metronome-bpm" min="40" max="240" value="120" class="w-full">
+            </div>
+        </div>
+
+        <!-- Timbre e Volume -->
+        <div id="control-panel" class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="flex flex-col gap-1">
+                <label class="block text-[10px] font-bold text-cyan-400 uppercase tracking-wider">Timbre</label>
+                <select id="instrument-select" class="w-full p-2 text-sm rounded bg-slate-900 border-slate-600 outline-none"></select>
+            </div>
+            <div class="flex flex-col gap-1">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Volume do Piano</label>
+                <input type="range" id="main-vol" min="0" max="100" value="80" class="w-full mt-1">
+            </div>
+            <div class="flex flex-col md:flex-row gap-4">
+                <div class="flex-1 flex flex-col gap-1">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Reverb</label>
+                    <input type="range" id="reverb-slider" min="0" max="100" value="30" class="w-full">
+                </div>
+                <div class="flex-1 flex flex-col gap-1">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sustentação</label>
+                    <input type="range" id="release-slider" min="5" max="300" value="100" class="w-full">
+                </div>
+            </div>
+        </div>
+
+        <div id="piano" class="piano-container pb-4 relative"></div>
+
+        <footer class="mt-4 text-center text-slate-500 text-[10px] uppercase tracking-widest border-t border-slate-700/50 pt-4 pb-2">
+            Desenvolvido pelo professor <strong>Glauber Santiago</strong> • DAC/UFSCar
+        </footer>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // --- CITAÇÕES ---
+        const fallbacks = [
+            { content: "Educação não transforma o mundo. Educação muda as pessoas. Pessoas transformam o mundo.", author: "Paulo Freire" },
+            { content: "Sem música, a vida seria um erro.", author: "Friedrich Nietzsche" },
+            { content: "Onde as palavras falham, a música fala.", author: "Hans Christian Andersen" },
+            { content: "A criatividade é a inteligência se divertindo.", author: "Albert Einstein" },
+            { content: "Música é a literatura do coração; começa onde termina a fala.", author: "Alphonse de Lamartine" },
+            { content: "Tudo o que podes imaginar é real.", author: "Pablo Picasso" },
+            { content: "A música expressa o que não pode ser dito e sobre o qual é impossível ficar calado.", author: "Victor Hugo" },
+            { content: "O conhecimento fala, mas a sabedoria escuta.", author: "Jimi Hendrix" },
+            { content: "A música pode mudar o mundo.", author: "Ludwig van Beethoven" }
+        ];
+
+        // --- ESTADO ---
+        const gameState = {
+            active: true,
+            currentNote: null,
+            score: 0,
+            bestScore: 0,
+            totalHits: 0,
+            totalErrors: 0,
+            timer: null,
+            canInput: false,
+            difficultyDuration: 5000,
+            noteSequence: [],
+            pool: [
+                { key: 'KeyC', midi: 60, name: 'Dó', y: 105, ledger: true },
+                { key: 'KeyD', midi: 62, name: 'Ré', y: 97.5, ledger: false },
+                { key: 'KeyE', midi: 64, name: 'Mi', y: 90, ledger: false },
+                { key: 'KeyF', midi: 65, name: 'Fá', y: 82.5, ledger: false },
+                { key: 'KeyG', midi: 67, name: 'Sol', y: 75, ledger: false },
+                { key: 'KeyA', midi: 69, name: 'Lá', y: 67.5, ledger: false },
+                { key: 'KeyB', midi: 71, name: 'Si', y: 60, ledger: false }
+            ]
+        };
+
+        const typewriterData = {
+            noteMap: {
+                'KeyA': { name: 'Lá', notes: [57, 69, 81] }, 
+                'KeyB': { name: 'Si', notes: [59, 71, 83] }, 
+                'KeyC': { name: 'Dó', notes: [48, 60, 72] },
+                'KeyD': { name: 'Ré', notes: [50, 62, 74] },
+                'KeyE': { name: 'Mi', notes: [52, 64, 76] },
+                'KeyF': { name: 'Fá', notes: [53, 65, 77] },
+                'KeyG': { name: 'Sol', notes: [55, 67, 79] }
+            }
+        };
+
+        const sfNames = ["acoustic_grand_piano", "bright_acoustic_piano", "electric_grand_piano", "honkytonk_piano", "electric_piano_1", "harpsichord", "clavi", "celesta", "glockenspiel", "vibraphone", "marimba", "xylophone", "tubular_bells", "drawbar_organ", "church_organ", "accordion", "acoustic_guitar_nylon", "acoustic_guitar_steel", "electric_guitar_clean", "acoustic_bass", "violin", "cello", "string_ensemble_1", "choir_aahs", "trumpet", "trombone", "french_horn", "alto_sax", "oboe", "clarinet", "flute", "recorder", "pan_flute"];
+        const gmNames = ["Piano Acústico", "Piano Brilhante", "Piano Rhodes", "Piano Honky-tonk", "Cravo", "Celesta", "Violão Nylon", "Violino", "Trompete", "Flauta"];
+
+        const state = { prog: 0, vol: 0.8, reverb: 0.3, release: 1.0 };
+        const metronome = { isPlaying: false, bpm: 120, volume: 0.5, timer: null };
+
+        let audioCtx = null;
+        let instrument = null;
+        let masterGain, reverbNode, dryGain, wetGain;
+
+        const bgMusic = document.getElementById('bg-music');
+        bgMusic.volume = 0.1;
+
+        // --- ÁUDIO ---
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            masterGain = audioCtx.createGain();
+            reverbNode = audioCtx.createConvolver();
+            
+            const length = audioCtx.sampleRate * 2.5;
+            const impulse = audioCtx.createBuffer(2, length, audioCtx.sampleRate);
+            for (let i = 0; i < 2; i++) {
+                const channel = impulse.getChannelData(i);
+                for (let j = 0; j < length; j++) channel[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / length, 2.5);
+            }
+            reverbNode.buffer = impulse;
+
+            dryGain = audioCtx.createGain();
+            wetGain = audioCtx.createGain();
+            dryGain.gain.value = 1.0;
+            wetGain.gain.value = state.reverb;
+
+            masterGain.connect(dryGain);
+            masterGain.connect(reverbNode);
+            reverbNode.connect(wetGain);
+            dryGain.connect(audioCtx.destination);
+            wetGain.connect(audioCtx.destination);
+
+            loadInstrument();
+            spawnGameNote();
+        }
+
+        async function loadInstrument() {
+            instrument = await Soundfont.instrument(audioCtx, sfNames[state.prog], { destination: masterGain });
+        }
+
+        function playKey(midi) {
+            if (!instrument) return;
+            const now = audioCtx.currentTime;
+            const node = instrument.play(midi, now, { gain: state.vol });
+            node.stop(now + state.release);
+            const el = document.querySelector(`.key[data-note="${midi}"]`);
+            if (el) { el.classList.add('active'); setTimeout(() => el.classList.remove('active'), 200); }
+        }
+
+        // --- LÓGICA DO JOGO ---
+        function spawnGameNote() {
+            if (!gameState.active) return;
+            
+            gameState.currentNote = gameState.pool[Math.floor(Math.random() * gameState.pool.length)];
+            
+            const head = document.getElementById('note-head');
+            const ledger = document.getElementById('ledger-line');
+            const timerBar = document.getElementById('timer-progress');
+
+            head.setAttribute('cy', gameState.currentNote.y);
+            head.style.display = 'block';
+            
+            ledger.style.display = gameState.currentNote.ledger ? 'block' : 'none';
+            if(gameState.currentNote.ledger) {
+                ledger.setAttribute('y1', gameState.currentNote.y);
+                ledger.setAttribute('y2', gameState.currentNote.y);
+            }
+
+            if (instrument) {
+                instrument.play(gameState.currentNote.midi, audioCtx.currentTime, { gain: state.vol });
+            }
+
+            const durationInSeconds = gameState.difficultyDuration / 1000;
+            timerBar.style.transition = 'none';
+            timerBar.style.width = '100%';
+            setTimeout(() => {
+                timerBar.style.transition = `width ${durationInSeconds}s linear`;
+                timerBar.style.width = '0%';
+            }, 10);
+
+            gameState.canInput = true;
+            clearTimeout(gameState.timer);
+            gameState.timer = setTimeout(() => {
+                if(gameState.canInput) handleGameResult(false);
+            }, gameState.difficultyDuration);
+        }
+
+        function handleGameResult(isCorrect) {
+            gameState.canInput = false;
+            clearTimeout(gameState.timer);
+
+            if (isCorrect) {
+                gameState.score++;
+                gameState.totalHits++;
+                document.body.classList.add('hit-flash');
+                if (instrument) instrument.play(gameState.currentNote.midi);
+                gameState.noteSequence.push(gameState.currentNote.name);
+            } else {
+                gameState.score = 0;
+                gameState.totalErrors++;
+                document.body.classList.add('miss-flash');
+            }
+
+            document.getElementById('game-hits').textContent = gameState.score;
+            if(gameState.score > gameState.bestScore) {
+                gameState.bestScore = gameState.score;
+                document.getElementById('game-best').textContent = gameState.bestScore;
+            }
+
+            setTimeout(() => {
+                document.body.classList.remove('hit-flash', 'miss-flash');
+                spawnGameNote();
+            }, 1000);
+        }
+
+        // --- UI E EVENTOS ---
+        function renderPiano() {
+            const piano = document.getElementById('piano');
+            let html = "";
+            for (let i = 21; i <= 108; i++) {
+                const isBlack = [1, 3, 6, 8, 10].includes(i % 12);
+                if (!isBlack) {
+                    const nextIsBlack = [1, 3, 6, 8, 10].includes((i + 1) % 12);
+                    let blackHTML = nextIsBlack ? `<div class="key black" data-note="${i+1}"></div>` : '';
+                    html += `<div class="relative flex-none"><div class="key white" data-note="${i}"></div>${blackHTML}</div>`;
+                }
+            }
+            piano.innerHTML = html;
+
+            piano.querySelectorAll('.key').forEach(keyEl => {
+                keyEl.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    if (!audioCtx) initAudio();
+                    const midi = parseInt(keyEl.getAttribute('data-note'));
+                    
+                    if (gameState.active && gameState.canInput) {
+                        const mapping = Object.values(typewriterData.noteMap).find(m => m.name === gameState.currentNote.name);
+                        if (mapping && mapping.notes.includes(midi)) {
+                             handleGameResult(true); return;
+                        } else if (Object.values(typewriterData.noteMap).some(m => m.notes.includes(midi))) {
+                             handleGameResult(false); return;
+                        }
+                    }
+                    playKey(midi);
+                });
+            });
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;
+            if (e.repeat) return;
+            if (!audioCtx) initAudio();
+
+            if (gameState.active && gameState.canInput) {
+                if (e.code === gameState.currentNote.key) {
+                    handleGameResult(true); return;
+                } else if (['KeyA','KeyB','KeyC','KeyD','KeyE','KeyF','KeyG'].includes(e.code)) {
+                    handleGameResult(false); return;
+                }
+            }
+
+            const data = typewriterData.noteMap[e.code];
+            if (data) playKey(data.notes[1]);
+        });
+
+        // Controles
+        document.getElementById('music-toggle').addEventListener('click', (e) => {
+            if (!audioCtx) initAudio();
+            if (bgMusic.paused) {
+                bgMusic.play();
+                e.target.textContent = "Pausar";
+            } else {
+                bgMusic.pause();
+                e.target.textContent = "Ligar";
+            }
+        });
+
+        document.getElementById('music-vol').addEventListener('input', (e) => {
+            bgMusic.volume = e.target.value / 100;
+        });
+
+        document.getElementById('difficulty-select').addEventListener('change', (e) => {
+            gameState.difficultyDuration = parseInt(e.target.value);
+            clearTimeout(gameState.timer);
+            spawnGameNote();
+        });
+
+        document.getElementById('toggle-contrast-btn').addEventListener('click', () => document.body.classList.toggle('high-contrast'));
+        document.getElementById('instrument-select').addEventListener('change', (e) => { state.prog = parseInt(e.target.value); loadInstrument(); });
+        document.getElementById('main-vol').addEventListener('input', (e) => state.vol = e.target.value / 100);
+        document.getElementById('reverb-slider').addEventListener('input', (e) => { state.reverb = e.target.value / 100; if(wetGain) wetGain.gain.setTargetAtTime(state.reverb, audioCtx.currentTime, 0.05); });
+        document.getElementById('release-slider').addEventListener('input', (e) => state.release = e.target.value / 100);
+
+        document.getElementById('metronome-toggle').addEventListener('click', () => {
+            if (!audioCtx) initAudio();
+            metronome.isPlaying = !metronome.isPlaying;
+            const btn = document.getElementById('metronome-toggle');
+            if (metronome.isPlaying) {
+                btn.innerHTML = '<i data-lucide="square" class="w-4 h-4 text-red-500"></i>';
+                metronome.timer = setInterval(() => {
+                    const osc = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    osc.connect(g); g.connect(audioCtx.destination);
+                    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+                    g.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+                }, 60000 / metronome.bpm);
+            } else {
+                btn.innerHTML = '<i data-lucide="play" class="w-4 h-4 text-green-500"></i>';
+                clearInterval(metronome.timer);
+            }
+            lucide.createIcons();
+        });
+
+        document.getElementById('metronome-bpm').addEventListener('input', (e) => {
+            metronome.bpm = e.target.value;
+            document.getElementById('bpm-val').textContent = metronome.bpm;
+            if (metronome.isPlaying) { document.getElementById('metronome-toggle').click(); document.getElementById('metronome-toggle').click(); }
+        });
+
+        // Relatório
+        document.getElementById('copy-report').addEventListener('click', () => {
+            const name = document.getElementById('user-name').value || "Usuário não identificado";
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('pt-BR');
+            const timeStr = now.toLocaleTimeString('pt-BR');
+            const quote = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+            const diff = document.getElementById('difficulty-select').options[document.getElementById('difficulty-select').selectedIndex].text;
+
+            const report = `
+DESAFIO MUSICAL QWERTY
+-------------------------------------------
+Usuário: ${name}
+Data: ${dateStr} às ${timeStr}
+-------------------------------------------
+ESTATÍSTICAS DO DESAFIO:
+Tempo de Resposta: ${diff}
+Total de Acertos: ${gameState.totalHits}
+Maior Sequência: ${gameState.bestScore}
+Total de Erros: ${gameState.totalErrors}
+-------------------------------------------
+NOTAS ACERTADAS:
+${gameState.noteSequence.join(' - ') || 'Nenhuma nota acertada ainda.'}
+-------------------------------------------
+CITAÇÃO:
+"${quote.content}" — ${quote.author}
+-------------------------------------------
+            `;
+
+            const temp = document.createElement("textarea");
+            temp.value = report.trim();
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand("copy");
+            document.body.removeChild(temp);
+
+            const btn = document.getElementById('copy-report');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> COPIADO!';
+            setTimeout(() => btn.innerHTML = originalText, 2000);
+        });
+
+        // Init
+        const sel = document.getElementById('instrument-select');
+        gmNames.forEach((n, i) => sel.appendChild(new Option(n, i)));
+        renderPiano();
+        setTimeout(() => { const c4 = document.querySelector('[data-note="60"]'); if (c4) c4.scrollIntoView({ inline: 'center' }); }, 500);
+    </script>
+</body>
+</html>
