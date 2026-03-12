@@ -276,18 +276,17 @@
             difficultyDuration: 5000,
             noteSequence: [],
             missedSequence: [],
-            // Lógica de Sequência Customizada
-            currentStep: 1, // de 1 a 9
+            currentStep: 1, 
             stepSubIndex: 0,
-            randomNotesInStep: 0, // contador para passos aleatórios
+            randomNotesInStep: 0, 
             pool: [
-                { key: 'KeyC', midi: 60, name: 'Dó', y: 105, ledger: true }, // index 0
-                { key: 'KeyD', midi: 62, name: 'Ré', y: 97.5, ledger: false }, // index 1
-                { key: 'KeyE', midi: 64, name: 'Mi', y: 90, ledger: false },   // index 2
-                { key: 'KeyF', midi: 65, name: 'Fá', y: 82.5, ledger: false }, // index 3
-                { key: 'KeyG', midi: 67, name: 'Sol', y: 75, ledger: false },  // index 4
-                { key: 'KeyA', midi: 69, name: 'Lá', y: 67.5, ledger: false }, // index 5
-                { key: 'KeyB', midi: 71, name: 'Si', y: 60, ledger: false }    // index 6
+                { key: 'KeyC', midi: 60, name: 'Dó', y: 105, ledger: true }, 
+                { key: 'KeyD', midi: 62, name: 'Ré', y: 97.5, ledger: false }, 
+                { key: 'KeyE', midi: 64, name: 'Mi', y: 90, ledger: false },   
+                { key: 'KeyF', midi: 65, name: 'Fá', y: 82.5, ledger: false }, 
+                { key: 'KeyG', midi: 67, name: 'Sol', y: 75, ledger: false },  
+                { key: 'KeyA', midi: 69, name: 'Lá', y: 67.5, ledger: false }, 
+                { key: 'KeyB', midi: 71, name: 'Si', y: 60, ledger: false }    
             ]
         };
 
@@ -385,35 +384,26 @@
 
         function stopClock() {
             clearInterval(gameState.clockInterval);
-            document.getElementById('stat-clock').textContent = "00:00";
+            // Removido o reset do textContent para "00:00" aqui para manter o tempo no relatório
         }
 
         function spawnGameNote() {
             if (!gameState.active) return;
             
-            // Lógica de Sequência
             let noteToDisplay;
-
-            // Checa se o passo atual é fixo ou aleatório
             if (RANDOM_REQUIREMENTS[gameState.currentStep]) {
-                // Aleatório
                 noteToDisplay = gameState.pool[Math.floor(Math.random() * gameState.pool.length)];
                 gameState.randomNotesInStep++;
-                
-                // Se completou a quantidade de aleatórias do passo
                 if (gameState.randomNotesInStep >= RANDOM_REQUIREMENTS[gameState.currentStep]) {
                     gameState.currentStep++;
                     gameState.randomNotesInStep = 0;
                     gameState.stepSubIndex = 0;
                 }
             } else {
-                // Fixo
                 const seq = CUSTOM_SEQUENCES[gameState.currentStep];
                 const char = seq[gameState.stepSubIndex];
                 noteToDisplay = gameState.pool[noteLookup[char]];
                 gameState.stepSubIndex++;
-                
-                // Se completou a sequência fixa
                 if (gameState.stepSubIndex >= seq.length) {
                     gameState.currentStep++;
                     gameState.stepSubIndex = 0;
@@ -421,7 +411,6 @@
                 }
             }
 
-            // Loop infinito
             if (gameState.currentStep > 9) {
                 gameState.currentStep = 1;
                 gameState.stepSubIndex = 0;
@@ -562,7 +551,6 @@
         }
 
         document.getElementById('bg-music-select').addEventListener('change', updateMusicSource);
-
         document.getElementById('music-vol').addEventListener('input', (e) => {
             bgMusic.volume = e.target.value / 100;
         });
@@ -585,11 +573,12 @@
                 gameState.level = 1;
                 gameState.noteSequence = [];
                 gameState.missedSequence = [];
-                // Reset da lógica de sequência
                 gameState.currentStep = 1;
                 gameState.stepSubIndex = 0;
                 gameState.randomNotesInStep = 0;
 
+                // Reset visual do clock apenas no início
+                document.getElementById('stat-clock').textContent = "00:00";
                 document.getElementById('stat-hits').textContent = "0";
                 document.getElementById('stat-errors').textContent = "0";
                 document.getElementById('stat-level').textContent = "1";
@@ -622,19 +611,15 @@
         });
 
         document.getElementById('toggle-contrast-btn').addEventListener('click', () => document.body.classList.toggle('high-contrast'));
-        
         document.getElementById('instrument-select').addEventListener('change', (e) => { 
             state.prog = parseInt(e.target.value); 
             loadInstrument(); 
         });
-
         document.getElementById('main-vol').addEventListener('input', (e) => state.vol = e.target.value / 100);
-        
         document.getElementById('reverb-slider').addEventListener('input', (e) => { 
             state.reverb = e.target.value / 100; 
             if(wetGain) wetGain.gain.setTargetAtTime(state.reverb, audioCtx.currentTime, 0.05); 
         });
-        
         document.getElementById('release-slider').addEventListener('input', (e) => state.release = e.target.value / 100);
 
         document.getElementById('copy-report').addEventListener('click', () => {
@@ -646,29 +631,23 @@
             const diff = document.getElementById('difficulty-select').options[document.getElementById('difficulty-select').selectedIndex].text;
             const timeElapsed = document.getElementById('stat-clock').textContent;
 
-            const report = `
-DESAFIO MUSICAL QWERTY
--------------------------------------------
+            const report = `DESAFIO MUSICAL QWERTY
+
+"${quote.content}" — ${quote.author}
+
 Usuário: ${name}
 Data: ${dateStr} às ${timeStr}
 Tempo de Jogo: ${timeElapsed}
--------------------------------------------
-ESTATÍSTICAS DO DESAFIO:
+Tempo máximo de resposta selecionado: ${diff}
 Nível Alcançado: ${gameState.level}
-Tempo de Resposta: ${diff}
 Total de Acertos: ${gameState.totalHits}
 Total de Erros: ${gameState.totalErrors}
--------------------------------------------
+
 NOTAS ACERTADAS:
 ${gameState.noteSequence.join(' - ') || 'Nenhuma'}
 
 NOTAS NÃO ACERTADAS (ERROS/TIMEOUT):
-${gameState.missedSequence.join(' - ') || 'Nenhum erro registrado'}
--------------------------------------------
-CITAÇÃO:
-"${quote.content}" — ${quote.author}
--------------------------------------------
-            `;
+${gameState.missedSequence.join(' - ') || 'Nenhum erro registrado'}`;
 
             const temp = document.createElement("textarea");
             temp.value = report.trim();
@@ -693,12 +672,10 @@ CITAÇÃO:
         bgMusic.src = `https://github.com/GlauberLASantiago/DesafioMusicalQWERTY/raw/main/DesafioMusicalQWERTY_1.mp3`;
 
         renderPiano();
-        
         setTimeout(() => { 
             const c4 = document.querySelector('[data-note="60"]'); 
             if (c4) c4.scrollIntoView({ inline: 'center' }); 
         }, 500);
-
     </script>
 </body>
 </html>
