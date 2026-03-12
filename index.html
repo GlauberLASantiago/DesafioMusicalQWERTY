@@ -143,7 +143,7 @@
                         <line x1="20" y1="85" x2="380" y2="85" />
                         <line x1="20" y1="100" x2="380" y2="100" />
                     </g>
-                    <!-- Clave inicial -->
+                    <!-- Clave -->
                     <text id="clef-symbol" x="15" y="98" font-size="110" fill="#1e293b" font-family="serif">𝄞</text>
                     
                     <!-- Linhas suplementares dinâmicas -->
@@ -173,16 +173,28 @@
                 </div>
 
                 <!-- Painel de Início -->
-                <div id="start-prompt" class="absolute inset-0 bg-white/90 flex flex-col items-center justify-center text-slate-800 p-6 text-center">
-                    <div class="max-w-md">
-                        <h2 class="text-xl font-bold mb-3 uppercase tracking-tight">Instruções de Jogo</h2>
-                        <ul class="text-sm text-left space-y-2 mb-6 list-disc list-inside">
-                            <li>Identifique a nota no pentagrama (Clave de Sol ou Fá).</li>
-                            <li>Use as teclas <b>C, D, E, F, G, A, B</b> do teclado.</li>
-                            <li>A cada 10 acertos, o nível aumenta.</li>
-                            <li>O jogo alterna entre trechos aleatórios e padrões fixos.</li>
-                        </ul>
-                        <p class="font-bold text-blue-600 animate-pulse">Clique em INICIAR JOGO para começar!</p>
+                <div id="start-prompt" class="absolute inset-0 bg-white/95 flex flex-col items-center justify-center text-slate-800 p-6 text-center">
+                    <div class="max-w-xl">
+                        <h2 class="text-2xl font-black mb-4 uppercase tracking-tight text-blue-600">Como Jogar</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-left mb-8">
+                            <div class="space-y-2">
+                                <h3 class="font-bold flex items-center gap-2"><i data-lucide="settings-2" class="w-4 h-4"></i> 1. Prepare-se</h3>
+                                <p class="text-xs text-slate-600">Escolha o <b>Cenário</b> (Clave de Sol ou Fá) e o <b>Tempo Máximo</b> de resposta nos menus acima.</p>
+                            </div>
+                            <div class="space-y-2">
+                                <h3 class="font-bold flex items-center gap-2"><i data-lucide="music" class="w-4 h-4"></i> 2. Identifique</h3>
+                                <p class="text-xs text-slate-600">Observe a nota no pentagrama. O som da nota tocará automaticamente para ajudar na identificação.</p>
+                            </div>
+                            <div class="space-y-2">
+                                <h3 class="font-bold flex items-center gap-2"><i data-lucide="keyboard" class="w-4 h-4"></i> 3. Responda</h3>
+                                <p class="text-xs text-slate-600">Use as teclas <b>C, D, E, F, G, A, B</b> ou clique no piano antes da barra vermelha acabar.</p>
+                            </div>
+                            <div class="space-y-2">
+                                <h3 class="font-bold flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4"></i> 4. Evolua</h3>
+                                <p class="text-xs text-slate-600">A cada 10 acertos você sobe de nível. Erros não resetam sua posição na melodia, apenas sua pontuação atual.</p>
+                            </div>
+                        </div>
+                        <p class="font-black text-lg text-blue-700 animate-pulse border-t pt-4">Clique em INICIAR JOGO para começar o desafio!</p>
                     </div>
                 </div>
             </div>
@@ -213,12 +225,12 @@
                         <option value="4">Trilha 4</option>
                     </select>
                 </div>
-                <input type="range" id="music-vol" min="0" max="100" value="15" class="w-full">
+                <input type="range" id="music-vol" min="0" max="100" value="10" class="w-full">
             </div>
 
             <div class="bg-slate-800/40 p-4 rounded-xl border border-slate-700 flex flex-col gap-3">
-                <label class="text-[10px] font-bold text-slate-400 uppercase">Volume Geral do Piano</label>
-                <input type="range" id="main-vol" min="0" max="100" value="80" class="w-full">
+                <label class="text-[10px] font-bold text-slate-400 uppercase">Volume das notas</label>
+                <input type="range" id="main-vol" min="0" max="100" value="100" class="w-full">
             </div>
         </div>
 
@@ -256,11 +268,11 @@
 
         // --- CONFIGURAÇÃO DE CENÁRIOS ---
         const SCENARIOS = {
-            1: { name: "1: Sol (Dó4-Si4)", clef: "treble", range: [60, 71] },
-            2: { name: "2: Sol (Mi4-Fá5)", clef: "treble", range: [64, 77] },
-            3: { name: "3: Sol (Sol3-Dó6)", clef: "treble", range: [55, 84] },
-            4: { name: "4: Fá (Dó3-Dó4)", clef: "bass", range: [48, 60] },
-            5: { name: "5: Fá (Sol2-Lá3)", clef: "bass", range: [43, 57] },
+            1: { name: "1: Sol (C4-B4)", clef: "treble", range: [60, 71] },
+            2: { name: "2: Sol (E4-F5)", clef: "treble", range: [64, 77] },
+            3: { name: "3: Sol (G3-C6)", clef: "treble", range: [55, 84] },
+            4: { name: "4: Fá (C3-C4)", clef: "bass", range: [48, 60] },
+            5: { name: "5: Fá (G2-A3)", clef: "bass", range: [43, 57] },
             6: { name: "6: Fá (Dó2-Ré4)", clef: "bass", range: [36, 62] }
         };
 
@@ -292,6 +304,7 @@
             active: false,
             currentScenario: SCENARIOS[1],
             currentNote: null,
+            lastMidi: -1,
             score: 0,
             bestScore: 0,
             totalHits: 0,
@@ -304,7 +317,6 @@
             difficultyDuration: 5000,
             noteSequence: [],
             missedSequence: [],
-            // Máquina de Estados da Sequência
             currentStep: 1, 
             stepSubIndex: 0,
             randomNotesInStep: 0,
@@ -325,7 +337,7 @@
 
         const gmNames = ["Acoustic Grand Piano", "Bright Acoustic Piano", "Electric Grand Piano", "Honky-tonk Piano", "Electric Piano 1", "Electric Piano 2", "Harpsichord", "Clavinet", "Celesta", "Glockenspiel", "Music Box", "Vibraphone", "Marimba", "Xylophone", "Tubular Bells", "Dulcimer", "Drawbar Organ", "Percussive Organ", "Rock Organ", "Church Organ", "Reed Organ", "Accordion", "Harmonica", "Tango Accordion", "Acoustic Guitar (nylon)", "Acoustic Guitar (steel)", "Electric Guitar (jazz)", "Electric Guitar (clean)", "Electric Guitar (muted)", "Overdriven Guitar", "Distortion Guitar", "Guitar Harmonics", "Acoustic Bass", "Electric Bass (finger)", "Electric Bass (pick)", "Fretless Bass", "Slap Bass 1", "Slap Bass 2", "Synth Bass 1", "Synth Bass 2", "Violin", "Viola", "Cello", "Contrabass", "Tremolo Strings", "Pizzicato Strings", "Orchestral Harp", "Timpani", "String Ensemble 1", "String Ensemble 2", "Synth Strings 1", "Synth Strings 2", "Choir Aahs", "Voice Oohs", "Synth Choir", "Orchestra Hit", "Trumpet", "Trombone", "Tuba", "Muted Trumpet", "French Horn", "Brass Section", "Synth Brass 1", "Synth Brass 2", "Soprano Sax", "Alto Sax", "Tenor Sax", "Baritone Sax", "Oboe", "English Horn", "Bassoon", "Clarinet", "Piccolo", "Flute", "Recorder", "Pan Flute", "Blown Bottle", "Shakuhachi", "Whistle", "Ocarina", "Lead 1 (square)", "Lead 2 (sawtooth)", "Lead 3 (calliope)", "Lead 4 (chiff)", "Lead 5 (charang)", "Lead 6 (voice)", "Lead 7 (fifths)", "Lead 8 (bass + lead)", "Pad 1 (new age)", "Pad 2 (warm)", "Pad 3 (polysynth)", "Pad 4 (choir)", "Pad 5 (bowed)", "Pad 6 (metallic)", "Pad 7 (halo)", "Pad 8 (sweep)", "FX 1 (rain)", "FX 2 (soundtrack)", "FX 3 (crystal)", "FX 4 (atmosphere)", "FX 5 (brightness)", "FX 6 (goblins)", "FX 7 (echoes)", "FX 8 (sci-fi)", "Sitar", "Banjo", "Shamisen", "Koto", "Kalimba", "Bagpipe", "Fiddle", "Shanai", "Tinkle Bell", "Agogo", "Steel Drums", "Woodblock", "Taiko Drum", "Melodic Tom", "Synth Drum", "Reverse Cymbal", "Guitar Cutting Noise", "String Slap", "Breath Noise", "Seashore", "Bird Tweet", "Telephone Ring", "Helicopter", "Applause", "Gunshot"];
         const sfSlugs = gmNames.map(name => name.toLowerCase().replace(/[\(\)]/g, "").replace(/\s+/g, "_"));
-        const state = { prog: 12, vol: 0.8, reverb: 0.3, release: 1.0 }; 
+        const state = { prog: 12, vol: 1.0, reverb: 0.3, release: 1.0 }; 
 
         let audioCtx = null;
         let instrument = null;
@@ -424,13 +436,17 @@
             const step = gameState.currentStep;
 
             if (RANDOM_REQUIREMENTS[step]) {
-                // Passo Aleatório
-                noteToDisplay = gameState.pool[Math.floor(Math.random() * gameState.pool.length)];
-                gameState.randomNotesInStep++;
+                // Seleção aleatória sem repetição imediata
+                let attempts = 0;
+                do {
+                    noteToDisplay = gameState.pool[Math.floor(Math.random() * gameState.pool.length)];
+                    attempts++;
+                } while (noteToDisplay.midi === gameState.lastMidi && attempts < 10);
                 
+                gameState.randomNotesInStep++;
                 if (gameState.randomNotesInStep >= RANDOM_REQUIREMENTS[step]) {
-                    gameState.currentStep++;
-                    gameState.randomNotesInStep = 0;
+                    gameState.currentStep++; 
+                    gameState.randomNotesInStep = 0; 
                     gameState.stepSubIndex = 0;
                 }
             } else {
@@ -438,30 +454,27 @@
                 const seq = CUSTOM_SEQUENCES[step];
                 const char = seq[gameState.stepSubIndex];
                 const midiTarget = noteLookup[char];
-                
-                // Encontrar notas com esse nome no pool
                 const candidates = gameState.pool.filter(n => n.midi % 12 === midiTarget);
                 
                 if (candidates.length > 0) {
-                    // Seleciona a nota mais central para evitar saltos extremos
                     noteToDisplay = candidates[Math.floor(candidates.length / 2)];
                 } else {
-                    // Fallback se a nota não estiver no range (raro)
                     noteToDisplay = gameState.pool[0];
                 }
-
+                
                 gameState.stepSubIndex++;
                 if (gameState.stepSubIndex >= seq.length) {
-                    gameState.currentStep++;
-                    gameState.stepSubIndex = 0;
+                    gameState.currentStep++; 
+                    gameState.stepSubIndex = 0; 
                     gameState.randomNotesInStep = 0;
                 }
             }
 
-            // Loop infinito da estrutura
             if (gameState.currentStep > 9) gameState.currentStep = 1;
 
             gameState.currentNote = noteToDisplay;
+            gameState.lastMidi = noteToDisplay.midi;
+
             const head = document.getElementById('note-head');
             const timerBar = document.getElementById('timer-progress');
 
@@ -496,7 +509,9 @@
                     setTimeout(() => lvlEl.classList.remove('level-up-anim'), 1000);
                 }
             } else {
-                gameState.score = 0; gameState.totalErrors++;
+                // Erros não resetam mais a sequência (currentStep/stepSubIndex), apenas o score de sequência atual
+                gameState.score = 0; 
+                gameState.totalErrors++;
                 document.body.classList.add('miss-flash');
                 gameState.missedSequence.push(gameState.currentNote.name);
             }
@@ -560,7 +575,7 @@
                 clefEl.setAttribute("font-size", "110");
             } else {
                 clefEl.textContent = "𝄢"; 
-                clefEl.setAttribute("y", "106"); // Mais baixo conforme solicitado
+                clefEl.setAttribute("y", "104"); 
                 clefEl.setAttribute("font-size", "100");
             }
             updatePoolForScenario();
@@ -575,17 +590,15 @@
                 btn.innerHTML = '<i data-lucide="square" class="w-5 h-5"></i> PARAR JOGO';
                 btn.classList.replace('bg-green-600', 'bg-red-600');
                 document.getElementById('start-prompt').style.display = 'none';
-                
-                // Reset da lógica de sequência
-                gameState.currentStep = 1;
-                gameState.stepSubIndex = 0;
-                gameState.randomNotesInStep = 0;
-                
+                gameState.currentStep = 1; gameState.stepSubIndex = 0; gameState.randomNotesInStep = 0;
                 gameState.score = 0; gameState.totalHits = 0; gameState.totalErrors = 0;
                 updatePoolForScenario();
                 startClock(); spawnGameNote();
                 const val = document.getElementById('bg-music-select').value;
-                if (val) { bgMusic.src = `https://github.com/GlauberLASantiago/DesafioMusicalQWERTY/raw/main/DesafioMusicalQWERTY_${val}.mp3`; bgMusic.play(); }
+                if (val) { 
+                    bgMusic.src = `https://github.com/GlauberLASantiago/DesafioMusicalQWERTY/raw/main/DesafioMusicalQWERTY_${val}.mp3`; 
+                    bgMusic.play(); 
+                }
             } else {
                 btn.innerHTML = '<i data-lucide="play" class="w-5 h-5"></i> INICIAR JOGO';
                 btn.classList.replace('bg-red-600', 'bg-green-600');
@@ -643,6 +656,7 @@ ${gameState.missedSequence.join(' - ') || 'Nenhum erro registrado'}`;
         document.getElementById('toggle-contrast-btn').addEventListener('click', () => document.body.classList.toggle('high-contrast'));
 
         renderPiano(); updatePoolForScenario();
+        bgMusic.volume = 0.1; // Volume da trilha reduzido por padrão
         setTimeout(() => document.querySelector('[data-note="60"]').scrollIntoView({ inline: 'center' }), 500);
     </script>
 </body>
