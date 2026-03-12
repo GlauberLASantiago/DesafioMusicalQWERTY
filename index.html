@@ -118,6 +118,7 @@
                 <div class="flex flex-col items-end">
                    <label class="text-[9px] font-bold text-slate-400 uppercase">Tempo Limite</label>
                    <select id="difficulty-select" class="bg-slate-800 text-xs p-1 rounded border border-slate-600 outline-none">
+                       <option value="10000">10s</option>
                        <option value="5000" selected>5s</option>
                        <option value="3000">3s</option>
                        <option value="2000">2s</option>
@@ -143,7 +144,7 @@
                         <line x1="20" y1="85" x2="380" y2="85" />
                         <line x1="20" y1="100" x2="380" y2="100" />
                     </g>
-                    <!-- Clave -->
+                    <!-- Clave inicial -->
                     <text id="clef-symbol" x="15" y="98" font-size="110" fill="#1e293b" font-family="serif">𝄞</text>
                     
                     <!-- Linhas suplementares dinâmicas -->
@@ -191,7 +192,7 @@
                             </div>
                             <div class="space-y-2">
                                 <h3 class="font-bold flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4"></i> 4. Evolua</h3>
-                                <p class="text-xs text-slate-600">A cada 10 acertos você sobe de nível. Erros não resetam sua posição na melodia, apenas sua pontuação atual.</p>
+                                <p class="text-xs text-slate-600">A cada 10 acertos você sobe de nível.</p>
                             </div>
                         </div>
                         <p class="font-black text-lg text-blue-700 animate-pulse border-t pt-4">Clique em INICIAR JOGO para começar o desafio!</p>
@@ -436,7 +437,6 @@
             const step = gameState.currentStep;
 
             if (RANDOM_REQUIREMENTS[step]) {
-                // Seleção aleatória sem repetição imediata
                 let attempts = 0;
                 do {
                     noteToDisplay = gameState.pool[Math.floor(Math.random() * gameState.pool.length)];
@@ -450,7 +450,6 @@
                     gameState.stepSubIndex = 0;
                 }
             } else {
-                // Passo com Sequência Fixa
                 const seq = CUSTOM_SEQUENCES[step];
                 const char = seq[gameState.stepSubIndex];
                 const midiTarget = noteLookup[char];
@@ -509,7 +508,6 @@
                     setTimeout(() => lvlEl.classList.remove('level-up-anim'), 1000);
                 }
             } else {
-                // Erros não resetam mais a sequência (currentStep/stepSubIndex), apenas o score de sequência atual
                 gameState.score = 0; 
                 gameState.totalErrors++;
                 document.body.classList.add('miss-flash');
@@ -575,7 +573,7 @@
                 clefEl.setAttribute("font-size", "110");
             } else {
                 clefEl.textContent = "𝄢"; 
-                clefEl.setAttribute("y", "104"); 
+                clefEl.setAttribute("y", "105"); // Ajustado ligeiramente para baixo (de 104 para 105)
                 clefEl.setAttribute("font-size", "100");
             }
             updatePoolForScenario();
@@ -622,13 +620,15 @@
             const name = document.getElementById('user-name').value || "Usuário";
             const quote = fallbacks[Math.floor(Math.random() * fallbacks.length)];
             const diff = document.getElementById('difficulty-select').selectedOptions[0].text;
+            const timeElapsed = document.getElementById('stat-clock').textContent;
+
             const report = `DESAFIO MUSICAL QWERTY
 
 "${quote.content}" — ${quote.author}
 
 Usuário: ${name}
 Cenário: ${gameState.currentScenario.name}
-Tempo de Jogo: ${document.getElementById('stat-clock').textContent}
+Tempo de Jogo: ${timeElapsed}
 Tempo máximo de resposta selecionado: ${diff}
 Nível Alcançado: ${gameState.level}
 Total de Acertos: ${gameState.totalHits}
@@ -637,7 +637,7 @@ Total de Erros: ${gameState.totalErrors}
 NOTAS ACERTADAS:
 ${gameState.noteSequence.join(' - ') || 'Nenhuma'}
 
-NOTAS NÃO ACERTADAS (ERROS/TIMEOUT):
+NOTAS NÃO ACERTADAS:
 ${gameState.missedSequence.join(' - ') || 'Nenhum erro registrado'}`;
 
             const temp = document.createElement("textarea"); temp.value = report; document.body.appendChild(temp);
