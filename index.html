@@ -678,6 +678,7 @@
                 document.getElementById('start-prompt').style.display = 'none';
                 gameState.currentStep = 1; gameState.stepSubIndex = 0; gameState.randomNotesInStep = 0;
                 gameState.score = 0; gameState.totalHits = 0; gameState.totalErrors = 0;
+                gameState.noteSequence = []; gameState.missedSequence = [];
                 updatePoolForScenario();
                 startClock(); spawnGameNote();
                 const val = document.getElementById('bg-music-select').value;
