@@ -530,8 +530,11 @@
         // --- MOTOR DO JOGO ---
         function spawnGameNote() {
             if (!gameState.active) return;
-            clearTimeout(gameState.feedbackTimer);
-            gameState.feedbackTimer = null;
+            if (gameState.feedbackTimer) {
+                clearTimeout(gameState.feedbackTimer);
+                gameState.feedbackTimer = null;
+                document.body.classList.remove('hit-flash', 'miss-flash');
+            }
 
             let noteToDisplay;
             const step = gameState.currentStep;
@@ -753,6 +756,7 @@
                 gameState.score = 0; gameState.totalHits = 0; gameState.totalErrors = 0;
                 gameState.noteSequence = []; gameState.missedSequence = [];
                 clearTimeout(gameState.feedbackTimer);
+                document.body.classList.remove('hit-flash', 'miss-flash');
                 updatePoolForScenario();
                 startClock(); spawnGameNote();
                 const val = document.getElementById('bg-music-select').value;
@@ -773,6 +777,7 @@
                 }
                 clearInterval(gameState.clockInterval); bgMusic.pause(); clearTimeout(gameState.timer);
                 clearTimeout(gameState.feedbackTimer); gameState.feedbackTimer = null;
+                document.body.classList.remove('hit-flash', 'miss-flash');
                 if (gsap) {
                     gsap.killTweensOf([document.getElementById('note-head'), document.getElementById('dynamic-ledger-lines'), document.getElementById('timer-progress')]);
                     gsap.set(document.getElementById('timer-progress'), { clearProps: 'transform' });
