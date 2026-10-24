@@ -36,6 +36,7 @@ O jogo combina percepção visual, escuta, resposta rápida e memorização das 
 - **CSS3**
 - **JavaScript**
 - **Tailwind CSS**
+- **GSAP** (animações de interação e transições)
 - **Soundfont Player**
 - **Web Audio API**
 - **Lucide Icons**

@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/soundfont-player/dist/soundfont-player.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15/dist/gsap.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
         
@@ -35,20 +36,20 @@
             width: 54px; height: 160px;
             background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 0 0 6px 6px;
             cursor: pointer; box-shadow: inset 0 -4px 6px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.3);
-            transition: all 0.05s ease; position: relative; z-index: 1;
+            transition: background-color 0.05s ease; position: relative; z-index: 1;
         }
         .white.active {
-            background: #3b82f6; transform: translateY(2px);
+            background: #3b82f6;
         }
 
         .black {
             width: 34px; height: 100px;
             background: linear-gradient(to bottom, #334155 0%, #0f172a 100%);
             border-radius: 0 0 4px 4px; cursor: pointer;
-            z-index: 10; transition: all 0.05s ease; position: absolute; top: 0; right: -17px; 
+            z-index: 10; transition: background-color 0.05s ease; position: absolute; top: 0; right: -17px;
         }
         .black.active {
-            background: #2563eb; transform: translateY(2px);
+            background: #2563eb;
         }
 
         .staff-box {
@@ -70,7 +71,7 @@
             height: 4px;
             background: #ef4444;
             width: 0%;
-            transition: width 1s linear; 
+            transform-origin: left center;
         }
 
         .hit-flash { background-color: #166534 !important; }
@@ -78,15 +79,6 @@
 
         input[type=range] { -webkit-appearance: none; background: #334155; height: 4px; border-radius: 2px; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #3b82f6; cursor: pointer; }
-
-        .level-up-anim {
-            animation: bounce 0.5s ease-in-out 2;
-        }
-
-        @keyframes bounce {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); color: #fbbf24; }
-        }
     </style>
 </head>
 <body class="flex flex-col items-center min-h-screen py-4 px-4">
@@ -134,6 +126,7 @@
         <div id="game-section" class="flex flex-col gap-2">
             <div class="staff-box relative overflow-hidden">
                 <div id="timer-progress" class="absolute top-0 left-0 timer-bar"></div>
+                <div id="timer-countdown" class="absolute top-1 left-2 text-[10px] font-bold text-red-600" aria-label="Tempo restante" aria-live="off" hidden></div>
                 <svg id="staff-svg" viewBox="0 0 400 160" class="w-full h-auto">
                     <g stroke="#334155" stroke-width="1.5">
                         <line x1="20" y1="40" x2="380" y2="40" />
@@ -259,6 +252,14 @@
 
     <script>
         lucide.createIcons();
+
+        const gsap = window.gsap;
+        let reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (gsap) {
+            const motionSettings = gsap.matchMedia();
+            motionSettings.add('(prefers-reduced-motion: reduce)', () => { reduceMotion = true; });
+            motionSettings.add('(prefers-reduced-motion: no-preference)', () => { reduceMotion = false; });
+        }
 
         // --- CONFIGURAÇÃO DE CENÁRIOS ---
         const SCENARIOS = {
@@ -397,6 +398,8 @@
             gameStartTime: 0,
             clockInterval: null,
             timer: null,
+            feedbackTimer: null,
+            countdownInterval: null,
             canInput: false,
             difficultyDuration: 5000,
             noteSequence: [],
@@ -509,12 +512,33 @@
             const node = instrument.play(midi, now, { gain: state.vol });
             node.stop(now + state.release);
             const el = document.querySelector(`.key[data-note="${midi}"]`);
-            if (el) { el.classList.add('active'); setTimeout(() => el.classList.remove('active'), 200); }
+            if (el) {
+                el.classList.add('active');
+                if (gsap && !reduceMotion) {
+                    gsap.killTweensOf(el);
+                    gsap.fromTo(el, { y: 0 }, {
+                        y: 2, duration: 0.06, ease: 'power1.out', yoyo: true, repeat: 1,
+                        onComplete: () => {
+                            el.classList.remove('active');
+                            gsap.set(el, { clearProps: 'transform' });
+                        }
+                    });
+                } else {
+                    setTimeout(() => el.classList.remove('active'), 120);
+                }
+            }
         }
 
         // --- MOTOR DO JOGO ---
         function spawnGameNote() {
             if (!gameState.active) return;
+            clearInterval(gameState.countdownInterval);
+            gameState.countdownInterval = null;
+            if (gameState.feedbackTimer) {
+                clearTimeout(gameState.feedbackTimer);
+                gameState.feedbackTimer = null;
+                document.body.classList.remove('hit-flash', 'miss-flash');
+            }
 
             let noteToDisplay;
             const step = gameState.currentStep;
@@ -558,11 +582,26 @@
             gameState.lastMidi = noteToDisplay.midi;
 
             const head = document.getElementById('note-head');
+            const ledgerLines = document.getElementById('dynamic-ledger-lines');
             const timerBar = document.getElementById('timer-progress');
+            const timerCountdown = document.getElementById('timer-countdown');
 
             head.setAttribute('cy', gameState.currentNote.y);
             head.style.display = 'block';
             drawLedgerLines(gameState.currentNote.y);
+            if (gsap) {
+                gsap.killTweensOf([head, ledgerLines]);
+                gsap.set(head, { attr: { fill: '#1e293b' }, scale: 1, autoAlpha: 1 });
+                gsap.set(ledgerLines, { autoAlpha: 1 });
+                if (!reduceMotion) {
+                    gsap.fromTo(head, { autoAlpha: 0, scale: 0.7 }, {
+                        autoAlpha: 1, scale: 1, duration: 0.22, ease: 'back.out(1.7)'
+                    });
+                    gsap.fromTo(ledgerLines, { autoAlpha: 0 }, {
+                        autoAlpha: 1, duration: 0.16, ease: 'power1.out'
+                    });
+                }
+            }
 
             // FIX: Aplicada a sustentação (release) na nota disparada automaticamente
             if (instrument) {
@@ -572,8 +611,31 @@
             }
 
             const dur = gameState.difficultyDuration / 1000;
-            timerBar.style.transition = 'none'; timerBar.style.width = '100%';
-            setTimeout(() => { timerBar.style.transition = `width ${dur}s linear`; timerBar.style.width = '0%'; }, 10);
+            timerBar.style.transition = 'none';
+            timerBar.style.width = '100%';
+            timerCountdown.hidden = !reduceMotion;
+            timerCountdown.textContent = '';
+            if (gsap && !reduceMotion) {
+                gsap.killTweensOf(timerBar);
+                gsap.set(timerBar, { scaleX: 1 });
+                gsap.to(timerBar, { scaleX: 0, duration: dur, ease: 'none' });
+            } else if (!reduceMotion) {
+                setTimeout(() => {
+                    timerBar.style.transition = `width ${dur}s linear`;
+                    timerBar.style.width = '0%';
+                }, 10);
+            } else {
+                if (gsap) {
+                    gsap.killTweensOf(timerBar);
+                    gsap.set(timerBar, { clearProps: 'transform' });
+                }
+                const deadline = Date.now() + gameState.difficultyDuration;
+                const updateCountdown = () => {
+                    timerCountdown.textContent = `${Math.max(0, (deadline - Date.now()) / 1000).toFixed(1)}s`;
+                };
+                updateCountdown();
+                gameState.countdownInterval = setInterval(updateCountdown, 100);
+            }
 
             gameState.canInput = true;
             clearTimeout(gameState.timer);
@@ -583,6 +645,29 @@
         function handleGameResult(isCorrect) {
             gameState.canInput = false;
             clearTimeout(gameState.timer);
+            clearInterval(gameState.countdownInterval);
+            gameState.countdownInterval = null;
+            const timerCountdown = document.getElementById('timer-countdown');
+            timerCountdown.hidden = true;
+            timerCountdown.textContent = '';
+            if (reduceMotion) document.getElementById('timer-progress').style.width = '0%';
+            const noteHead = document.getElementById('note-head');
+            const stat = document.getElementById(isCorrect ? 'stat-hits' : 'stat-errors');
+            if (gsap) {
+                gsap.killTweensOf([noteHead, stat]);
+                if (reduceMotion) {
+                    gsap.set(noteHead, { attr: { fill: '#1e293b' }, scale: 1 });
+                    gsap.set(stat, { scale: 1 });
+                } else {
+                    gsap.fromTo(noteHead, { attr: { fill: '#1e293b' }, scale: 1 }, {
+                        attr: { fill: isCorrect ? '#16a34a' : '#dc2626' },
+                        scale: 1.15, duration: 0.16, ease: 'power1.out', yoyo: true, repeat: 1
+                    });
+                    gsap.fromTo(stat, { scale: 1 }, {
+                        scale: 1.14, duration: 0.12, ease: 'power1.out', yoyo: true, repeat: 1
+                    });
+                }
+            }
             if (isCorrect) {
                 gameState.score++; gameState.totalHits++;
                 document.body.classList.add('hit-flash');
@@ -592,8 +677,13 @@
                     gameState.level++;
                     const lvlEl = document.getElementById('stat-level');
                     lvlEl.textContent = gameState.level;
-                    lvlEl.classList.add('level-up-anim');
-                    setTimeout(() => lvlEl.classList.remove('level-up-anim'), 1000);
+                    if (gsap) {
+                        gsap.killTweensOf(lvlEl);
+                        if (reduceMotion) gsap.set(lvlEl, { scale: 1 });
+                        else gsap.fromTo(lvlEl, { scale: 1 }, {
+                            scale: 1.16, duration: 0.24, ease: 'power1.inOut', yoyo: true, repeat: 1
+                        });
+                    }
                 }
             } else {
                 gameState.score = 0; 
@@ -604,7 +694,8 @@
             document.getElementById('stat-hits').textContent = gameState.totalHits;
             document.getElementById('stat-errors').textContent = gameState.totalErrors;
             
-            setTimeout(() => {
+            gameState.feedbackTimer = setTimeout(() => {
+                gameState.feedbackTimer = null;
                 document.body.classList.remove('hit-flash', 'miss-flash');
                 if (gameState.active) spawnGameNote();
             }, 1000);
@@ -672,13 +763,24 @@
             if (!audioCtx) initAudio();
             gameState.active = !gameState.active;
             const btn = document.getElementById('start-stop-btn');
+            const startPrompt = document.getElementById('start-prompt');
+            if (gsap) gsap.killTweensOf(startPrompt);
             if (gameState.active) {
                 btn.innerHTML = '<i data-lucide="square" class="w-5 h-5"></i> PARAR JOGO';
                 btn.classList.replace('bg-green-600', 'bg-red-600');
-                document.getElementById('start-prompt').style.display = 'none';
+                if (gsap && !reduceMotion) {
+                    gsap.to(startPrompt, {
+                        autoAlpha: 0, y: -8, duration: 0.2, ease: 'power1.out',
+                        onComplete: () => { startPrompt.style.display = 'none'; }
+                    });
+                } else {
+                    startPrompt.style.display = 'none';
+                }
                 gameState.currentStep = 1; gameState.stepSubIndex = 0; gameState.randomNotesInStep = 0;
                 gameState.score = 0; gameState.totalHits = 0; gameState.totalErrors = 0;
                 gameState.noteSequence = []; gameState.missedSequence = [];
+                clearTimeout(gameState.feedbackTimer);
+                document.body.classList.remove('hit-flash', 'miss-flash');
                 updatePoolForScenario();
                 startClock(); spawnGameNote();
                 const val = document.getElementById('bg-music-select').value;
@@ -689,8 +791,25 @@
             } else {
                 btn.innerHTML = '<i data-lucide="play" class="w-5 h-5"></i> INICIAR JOGO';
                 btn.classList.replace('bg-red-600', 'bg-green-600');
-                document.getElementById('start-prompt').style.display = 'flex';
+                if (gsap && !reduceMotion) {
+                    startPrompt.style.display = 'flex';
+                    gsap.fromTo(startPrompt, { autoAlpha: 0, y: -8 }, {
+                        autoAlpha: 1, y: 0, duration: 0.24, ease: 'power1.out'
+                    });
+                } else {
+                    startPrompt.style.display = 'flex';
+                }
                 clearInterval(gameState.clockInterval); bgMusic.pause(); clearTimeout(gameState.timer);
+                clearTimeout(gameState.feedbackTimer); gameState.feedbackTimer = null;
+                clearInterval(gameState.countdownInterval); gameState.countdownInterval = null;
+                document.body.classList.remove('hit-flash', 'miss-flash');
+                document.getElementById('timer-countdown').hidden = true;
+                document.getElementById('timer-countdown').textContent = '';
+                if (gsap) {
+                    gsap.killTweensOf([document.getElementById('note-head'), document.getElementById('dynamic-ledger-lines'), document.getElementById('timer-progress')]);
+                    gsap.set(document.getElementById('timer-progress'), { clearProps: 'transform' });
+                }
+                document.getElementById('timer-progress').style.width = '0%';
                 document.getElementById('note-head').style.display = 'none';
                 document.getElementById('dynamic-ledger-lines').innerHTML = '';
             }
